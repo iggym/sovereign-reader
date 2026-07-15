@@ -1,795 +1,832 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aura Reader // Sovereign Cognitive Workspace</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <style>
-    :root {
-      --bg: #0A0A0C;
-      --surface: #121215;
-      --surface-card: #1C1C21;
-      --text: #F4F4F6;
-      --text-muted: #8E8E93;
-      --accent: #6366F1;
-      --accent-glow: rgba(99, 102, 241, 0.15);
-      --success: #10B981;
-      --border: #27272A;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Reader</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #fcfcfd;
+            --bg-secondary: #f4f5f6;
+            --text-primary: #1c1c1e;
+            --text-secondary: #6e6e73;
+            --accent: #0071e3;
+            --border: #e5e5ea;
+            --card-bg: #ffffff;
+            --highlight: rgba(0, 113, 227, 0.12);
+            --pacing-line: #0071e3;
+            --bubble-bg: #1c1c1e;
+            --bubble-text: #ffffff;
+            --bubble-border: #2c2c2e;
+        }
 
-    body {
-      margin: 0;
-      font-family: var(--font-sans);
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
-      -webkit-font-smoothing: antialiased;
-    }
-    
-    /* Drag-and-Drop Overlay HUD */
-    #drop-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(10, 10, 12, 0.96);
-      border: 2px dashed var(--accent);
-      box-sizing: border-box;
-      z-index: 15000;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      pointer-events: none;
-      backdrop-filter: blur(8px);
-    }
-    #drop-overlay.drag-over {
-      display: flex;
-    }
-    
-    /* Premium Sidebar Navigation Layout */
-    #sidebar {
-      width: 300px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      padding: 24px;
-      box-sizing: border-box;
-      z-index: 10;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
 
-    .brand-title {
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      margin: 0 0 4px 0;
-      color: var(--text);
-    }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-    .brand-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-    }
+        /* Responsive Navigation Architecture */
+        #sidebar {
+            width: 320px;
+            min-width: 320px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            z-index: 10;
+            transition: transform 0.3s ease;
+        }
 
-    /* Primary Workspace Shell */
-    #workspace {
-      flex: 1;
-      overflow-y: auto;
-      padding: 60px 80px;
-      box-sizing: border-box;
-      line-height: 1.9;
-      font-size: 18px;
-      position: relative;
-      background: var(--bg);
-    }
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
 
-    .content-container {
-      max-width: 680px;
-      margin: 0 auto;
-      padding-bottom: 240px;
-    }
-    
-    /* Floating Hub Modal Window Architecture */
-    #hub-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(10, 10, 12, 0.85);
-      backdrop-filter: blur(16px);
-      z-index: 20000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-    #hub-modal.modal-visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .modal-window {
-      background: var(--surface-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      width: 90%;
-      max-width: 720px;
-      max-height: 80vh;
-      overflow-y: auto;
-      padding: 40px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-      position: relative;
-    }
-    .close-modal-btn {
-      position: absolute;
-      top: 24px;
-      right: 24px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 16px;
-    }
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .premium-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
+        /* Improved Navigation Usability - Uncompressed Scroller Container */
+        .navigation-view {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px 16px 40px 16px; /* Enhanced bottom padding prevents compression near borders */
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
 
-    .premium-card h3 {
-      margin-top: 0;
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      color: var(--text);
-    }
-    
-    /* Neurobiology Focus Engine Classes */
-    .quiet-focus-active p {
-      opacity: 0.12;
-      transition: opacity 0.4s ease, filter 0.4s ease;
-      filter: blur(2px);
-    }
-    .quiet-focus-active p.active-focus-target {
-      opacity: 1;
-      filter: blur(0);
-    }
-    
-    #pacing-line {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      box-shadow: 0 0 12px var(--accent);
-      display: none;
-      pointer-events: none;
-      z-index: 5;
-    }
-    
-    /* Dopamine Tracker Visual Mechanics */
-    .constellation-node {
-      display: inline-block;
-      width: 5px;
-      height: 5px;
-      background: var(--accent);
-      border-radius: 50%;
-      margin: 3px;
-      box-shadow: 0 0 8px var(--accent);
-      animation: spark 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes spark {
-      0% { transform: scale(4); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    
-    /* NSDR Shield Configuration */
-    #reset-shield {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: var(--bg);
-      z-index: 10000;
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      backdrop-filter: blur(20px);
-    }
-    #nsdr-circle {
-      width: 140px;
-      height: 140px;
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      margin: 40px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 14px;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--text);
-      background: var(--surface);
-      transition: transform 1s ease-in-out, box-shadow 1s ease-in-out;
-    }
-    
-    /* Elegant Interface Controls */
-    .control-label {
-      font-size: 10px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      margin-bottom: 12px;
-      display: block;
-    }
-    .toggle-btn {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 10px 14px;
-      font-size: 13px;
-      font-weight: 500;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%;
-      margin-bottom: 8px;
-      text-align: left;
-      transition: all 0.2s ease;
-    }
-    .toggle-btn:hover {
-      background: #18181F;
-      border-color: #3F3F46;
-    }
-    .toggle-btn.active {
-      background: var(--accent-glow);
-      color: var(--text);
-      border-color: var(--accent);
-    }
-    .chapter-nav-item {
-      padding: 10px 12px;
-      margin: 2px 0;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 400;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: all 0.2s ease;
-    }
-    .chapter-nav-item:hover { color: var(--text); background: rgba(255,255,255,0.02); }
-    .chapter-nav-item.active { background: var(--surface-card); color: var(--text); border: 1px solid var(--border); }
-    
-    #action-bubble {
-      position: absolute;
-      background: var(--surface-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      display: none;
-      gap: 2px;
-      z-index: 1000;
-    }
-    .harness-btn {
-      background: transparent;
-      color: var(--text);
-      border: none;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 500;
-      border-radius: 16px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .harness-btn:hover { background: rgba(255,255,255,0.06); }
-    
-    #file-input { display: none; }
-    .upload-label {
-      background: var(--text);
-      color: var(--bg);
-      padding: 12px;
-      text-align: center;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-      margin-bottom: 12px;
-      display: block;
-      transition: opacity 0.2s ease;
-    }
-    .upload-label:hover { opacity: 0.9; }
-    
-    .library-link {
-      display: inline-block;
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 14px;
-      margin-right: 24px;
-      margin-bottom: 8px;
-      font-weight: 500;
-      transition: opacity 0.2s ease;
-    }
-    .library-link:hover { opacity: 0.8; }
-    
-    #status-toast {
-      position: fixed;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--text);
-      color: var(--bg);
-      padding: 10px 20px;
-      border-radius: 30px;
-      font-size: 12px;
-      font-weight: 600;
-      display: none;
-      z-index: 25000;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    }
-  </style>
-</head>
-<body id="drop-target">
+        .navigation-view::-webkit-scrollbar {
+            width: 6px;
+        }
+        .navigation-view::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
 
-  <!-- Drag HUD overlay -->
-  <div id="drop-overlay">
-    <h1 style="font-weight: 500; letter-spacing: -0.03em; margin: 0 0 8px 0;">Drop EPUB Document</h1>
-    <p style="color: var(--text-muted); font-size: 14px; margin: 0;">Release to import directly into the sandbox</p>
-  </div>
+        .nav-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin: 16px 8px 10px 8px;
+            font-weight: 700;
+        }
 
-  <!-- Primary Sidebar Navigation Layout -->
-  <div id="sidebar">
-    <div class="brand-title">AURA READER</div>
-    <div class="brand-subtitle">Sovereign Cognitive Desk</div>
-    
-    <label for="file-input" class="upload-label">Import Local Book</label>
-    <input type="file" id="file-input" accept=".epub">
-    
-    <button class="toggle-btn" id="btn-hub" onclick="toggleHubModal(true)" style="background: rgba(255,255,255,0.03); border-color: var(--border); text-align: center; margin-bottom: 24px;">Workspace Guide & Catalogs</button>
+        .chapter-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px; /* Distinct visual micro-spacing */
+        }
 
-    <!-- Focus Deck Tools -->
-    <div style="margin-bottom: 24px;">
-      <span class="control-label">Arousal & Focus</span>
-      <button class="toggle-btn" id="btn-quiet" onclick="toggleQuietFocus()">Quiet Eye Isolation</button>
-      <button class="toggle-btn" id="btn-pacing" onclick="togglePacingLine()">Optokinetic Tracking</button>
-      <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 0 4px;">
-        <span style="font-size: 11px; color: var(--text-muted)">WPM:</span>
-        <input type="range" id="pacing-wpm" min="200" max="700" value="350" step="25" onchange="updateWpm()" style="flex: 1; accent-color: var(--text);">
-      </div>
-    </div>
+        .chapter-item {
+            padding: 12px 14px; /* Generous padding ensures scroller is open and tap targets are accessible */
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-ellipsis: ellipsis;
+            display: block;
+        }
 
-    <!-- Dopamine Ledger Modules -->
-    <div style="margin-bottom: 24px;">
-      <span class="control-label">Cognitive Grid</span>
-      <div style="font-size: 12px; margin-bottom: 8px; color: var(--text-muted);">Streak Integrity: <span id="streak-count" style="color: var(--text); font-weight: 600;">0</span> packages</div>
-      <div id="constellation-canvas" style="min-height: 24px; display: flex; flex-wrap: wrap;"></div>
-    </div>
+        .chapter-item:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
 
-    <!-- Maximize Index Navigation Space -->
-    <span class="control-label">Index Navigation</span>
-    <div id="chapter-list" style="flex: 1; overflow-y: auto;"></div>
-  </div>
+        .chapter-item.active {
+            background-color: var(--card-bg);
+            color: var(--accent);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border-left: 3px solid var(--accent);
+            padding-left: 11px;
+        }
 
-  <!-- Primary Workspace Content Frame -->
-  <div id="workspace">
-    <div id="pacing-line"></div>
-    <div class="content-container" id="book-content">
-      <h1 style="font-size: 32px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 16px 0;">No Document Active</h1>
-      <p style="color: var(--text-muted); font-size: 16px; margin: 0;">Drag and drop an EPUB file into the workspace or choose a manual upload path in the top sidebar to initiate cognitive ingestion.</p>
-    </div>
-  </div>
+        /* Controls Architecture */
+        .controls-panel {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border);
+            background-color: var(--bg-secondary);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
 
-  <!-- Floating Hub Modal Window (Guide & Catalogs Overlaid Above UX) -->
-  <div id="hub-modal">
-    <div class="modal-window">
-      <button class="close-modal-btn" onclick="toggleHubModal(false)">×</button>
-      
-      <h2 style="font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px 0;">Workspace Architecture & Links</h2>
-      <p style="color: var(--text-muted); font-size: 15px; margin: 0 0 32px 0;">Operational specifications for your focus workspace and sources for digital materials.</p>
-      
-      <!-- Open Source Catalogs Block -->
-      <div style="margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 24px;">
-        <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 16px;">Open Source Catalogs</h3>
-        <a href="https://standardebooks.org" target="_blank" class="library-link">Standard Ebooks →</a>
-        <a href="https://www.gutenberg.org" target="_blank" class="library-link">Project Gutenberg →</a>
-        <a href="https://archive.org" target="_blank" class="library-link">Internet Archive →</a>
-      </div>
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
 
-      <!-- Instruction Cards -->
-      <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 16px;">How To Use</h3>
-      
-      <div class="premium-card">
-        <h3>1. Seamless File Injection</h3>
-        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">Drag and drop any DRM-free <strong>.epub</strong> file directly into the primary screen window layout workspace. The system splits the source structural items into standalone elements natively.</p>
-      </div>
+        .control-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
 
-      <div class="premium-card">
-        <h3>2. Deep Neurobiology Optimizations</h3>
-        <p style="font-size: 14px; color: var(--text-muted); margin: 0 0 12px 0;">Toggle advanced cognitive tools designed around visual attention pathways:</p>
-        <ul style="font-size: 14px; color: var(--text-muted); padding-left: 20px; margin: 0;">
-          <li style="margin-bottom: 6px;"><strong>Quiet Eye Isolation:</strong> Mutes surrounding prose blocks, focusing neural tracking mechanisms explicitly onto a single, sharp target sentence line.</li>
-          <li><strong>Optokinetic Tracking:</strong> Generates a smooth horizontal guide pacing layout to stimulate sustained alertness metrics via consistent, fluid eye tracking speeds.</li>
-        </ul>
-      </div>
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-      <div class="premium-card">
-        <h3>3. Constructing Prompt Packages</h3>
-        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">Highlight text anywhere in an active chapter block to call up the Context Bubble. Choose an operational modality to instantly construct structured system configurations (encapsulated within clean XML anchors) sent directly to your system clipboard.</p>
-      </div>
-    </div>
-  </div>
+        input[type="range"] {
+            flex-grow: 1;
+            accent-color: var(--accent);
+        }
 
-  <!-- Selection Action Utilities Menu -->
-  <div id="action-bubble">
-    <button class="harness-btn" onclick="executeHarnessAction('deconstruct')">Deconstruct</button>
-    <button class="harness-btn" onclick="executeHarnessAction('mental-model')">Mental Model</button>
-    <button class="harness-btn" onclick="executeHarnessAction('quiz')">Active Quiz</button>
-  </div>
+        .toggle-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-  <!-- Rest Shield Module Frame -->
-  <div id="reset-shield">
-    <h2 style="font-size: 24px; font-weight: 500; letter-spacing: -0.02em; margin: 0;">Cognitive Reset Interval</h2>
-    <p style="color: var(--text-muted); max-width: 360px; font-size: 14px; margin: 8px 0 0 0;">Synchronize your breathing patterns to flush neural fatigue frameworks.</p>
-    <div id="nsdr-circle">Inhale</div>
-    <button class="harness-btn" onclick="terminateResetEarly()" style="color: var(--text-muted); background: rgba(255,255,255,0.02); border: 1px solid var(--border)">Skip Break</button>
-  </div>
+        .toggle-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
 
-  <div id="status-toast"></div>
+        /* Workspace Core Viewport */
+        #workspace {
+            flex-grow: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-color: var(--bg-primary);
+        }
 
-  <script>
-    let currentBookData = { chapters: [], title: "" };
-    let activeSelection = "";
-    let isQuietFocus = false;
-    let isPacing = false;
-    let pacingInterval = null;
-    let currentWpm = 350;
-    
-    let wordsSinceLastReset = 0;
-    const RESET_THRESHOLD_WORDS = 4000;
+        #drop-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(252, 252, 253, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed var(--border);
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
 
-    // --- Modal Controls ---
-    function toggleHubModal(show) {
-      const modal = document.getElementById('hub-modal');
-      if (show) {
-        modal.classList.add('modal-visible');
-      } else {
-        modal.classList.remove('modal-visible');
-      }
-    }
+        #drop-zone.dragover {
+            opacity: 1;
+        }
 
-    // --- Drag and Drop Logic ---
-    const dropOverlay = document.getElementById('drop-overlay');
+        .drop-card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            max-width: 400px;
+        }
 
-    window.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropOverlay.classList.add('drag-over');
-    });
+        /* Modern Scholarly Typography Layout */
+        .reader-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 60px 20px;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
 
-    window.addEventListener('dragleave', (e) => {
-      if (e.relatedTarget === null) {
-        dropOverlay.classList.remove('drag-over');
-      }
-    });
+        .chapter-viewport {
+            max-width: 680px;
+            width: 100%;
+            font-family: Georgia, serif;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            position: relative;
+        }
 
-    window.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropOverlay.classList.remove('drag-over');
-      
-      const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.epub')) {
-        processEpubFile(file);
-      } else {
-        alert("Please drop a valid out-of-copyright or DRM-free .epub book.");
-      }
-    });
+        .chapter-viewport p {
+            margin-bottom: 2rem;
+            position: relative;
+            transition: opacity 0.3s ease;
+        }
 
-    document.getElementById('file-input').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) processEpubFile(file);
-    });
+        /* Quiet Eye Isolation State */
+        .quiet-eye-active p {
+            opacity: 0.15;
+        }
 
-    // EPUB Layout Core Extraction Processing
-    function processEpubFile(file) {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const zip = await JSZip.loadAsync(event.target.result);
-          currentBookData.chapters = [];
-          
-          const filePaths = Object.keys(zip.files).filter(path => path.endsWith('.html') || path.endsWith('.xhtml'));
-          filePaths.sort();
+        .quiet-eye-active p.focused-sentence-para {
+            opacity: 1;
+        }
 
-          const listContainer = document.getElementById('chapter-list');
-          listContainer.innerHTML = "";
+        /* Optokinetic Pacing Overlay Component */
+        #pacing-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--pacing-line);
+            opacity: 0;
+            pointer-events: none;
+            transition: top 0.1s linear;
+            z-index: 5;
+        }
 
-          let chapterIdx = 0;
-          for (const path of filePaths) {
-            const rawText = await zip.file(path).async("text");
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(rawText, "text/html");
-            
-            if (doc.body) {
-              const headings = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6');
-              headings.forEach(h => {
-                h.style.color = 'var(--text)';
-                h.style.letterSpacing = '-0.02em';
-              });
+        /* Tactical Selection Context Bubble UI Component */
+        .context-bubble {
+            position: absolute;
+            background-color: var(--bubble-bg);
+            border: 1px solid var(--bubble-border);
+            border-radius: 10px;
+            padding: 6px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+        }
+
+        .context-bubble.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .bubble-action {
+            background: transparent;
+            border: none;
+            color: var(--bubble-text);
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .bubble-action:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .bubble-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1c1c1e;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 2000;
+        }
+
+        .bubble-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Native Landing/Help States */
+        .help-view {
+            max-width: 680px;
+            width: 100%;
+            margin: 0 auto;
+            font-family: -apple-system, sans-serif;
+        }
+
+        .help-view h2 { margin-bottom: 16px; font-weight: 700; font-size: 1.8rem; }
+        .help-view h3 { margin: 24px 0 12px 0; font-size: 1.2rem; }
+        .help-view p { color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+        
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .matrix-table th, .matrix-table td {
+            border: 1px solid var(--border);
+            padding: 12px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .matrix-table th { background: var(--bg-secondary); font-weight: 600; }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                position: absolute;
+                left: 0;
+                transform: translateX(-100%);
             }
+            #sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Architecture with Expanded Scroller Constraints -->
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <h1><span>🌟</span> Aura Reader</h1>
+        </div>
+        
+        <!-- Target Navigation Area: Uncompressed Navigation View Layout -->
+        <div class="navigation-view" id="navigation-container">
+            <div class="nav-section-title">Workspace Utilities</div>
+            <ul class="chapter-list">
+                <li class="chapter-item active" onclick="showHelpDocumentation()">📖 Quickstart & Help Matrix</li>
+            </ul>
             
-            const bodyContent = doc.body ? doc.body.innerHTML : rawText;
-            const title = doc.querySelector('title')?.innerText || `Section ${chapterIdx + 1}`;
+            <div id="dynamic-chapters-wrapper" style="display:none;">
+                <div class="nav-section-title" id="book-title-label">Manifest Document</div>
+                <ul class="chapter-list" id="epub-chapters-list">
+                    <!-- Ingested components attach seamlessly here -->
+                </ul>
+            </div>
+        </div>
 
-            currentBookData.chapters.push({ title, content: bodyContent });
+        <!-- System Controls Grid -->
+        <div class="controls-panel">
+            <div class="control-group">
+                <label>Focus Processing Engine</label>
+                <button class="toggle-btn" id="toggle-quiet-eye" onclick="toggleQuietEye()">
+                    Quiet Eye Isolation <span>Off</span>
+                </button>
+            </div>
+            <div class="control-group">
+                <label>Optokinetic Tracking Pacer</label>
+                <button class="toggle-btn" id="toggle-pacer" onclick="togglePacingEngine()" style="margin-bottom: 8px;">
+                    Visual Pace Tracker <span>Off</span>
+                </button>
+                <div class="slider-container">
+                    <input type="range" id="pacer-speed" min="200" max="800" value="350" oninput="updatePacingOutput(this.value)">
+                    <span id="speed-indicator" style="font-size: 0.8rem; color: var(--text-secondary); font-weight:600; min-width:50px;">350 WPM</span>
+                </div>
+            </div>
+        </div>
+    </aside>
 
-            const item = document.createElement('div');
-            item.className = 'chapter-nav-item';
-            item.innerText = title;
-            item.dataset.index = chapterIdx;
-            item.onclick = () => renderChapter(parseInt(item.dataset.index));
-            listContainer.appendChild(item);
+    <!-- Workspace Processing Core -->
+    <main id="workspace">
+        <div id="drop-zone">
+            <div class="drop-card">
+                <h3 style="margin-bottom:12px; font-size:1.4rem;">Ingest Document Architecture</h3>
+                <p style="font-size:0.9rem; color:var(--text-secondary);">Drop your unencrypted DRM-Free or public domain .epub file directly onto the screen.</p>
+            </div>
+        </div>
+
+        <div class="reader-container" id="reader-scroll-viewport" onscroll="handleViewportScroll()">
+            <div id="pacing-line"></div>
+            <div class="chapter-viewport" id="render-target">
+                <!-- Landing System Documentation -->
+                <div class="help-view">
+                    <h2>Welcome to Your Cognitive Desk 🚀</h2>
+                    <p>Aura Reader is a zero-dependency, single-file framework designed to maximize deep focus and transform long-form text ingestion into a high-octane data extraction sport.</p>
+                    
+                    <h3>🛠️ The Feature Alignment Matrix</h3>
+                    <table class="matrix-table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>The Biology Behind It 🧬</th>
+                                <th>How it Feels ⚡</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Quiet Eye Isolation</strong></td>
+                                <td>Mutes adjacent text blocks, keeping focus localized on the target block.</td>
+                                <td>Like a spotlight shifting down the page. 🔦</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Optokinetic Tracking</strong></td>
+                                <td>A steady tracking rule pacing your reading layout speed.</td>
+                                <td>Riding an acceleration engine through text layers. 🚄</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Context Harness Bubble</strong></td>
+                                <td>Extracts text directly into clean, structured XML-anchored LLM prompt templates.</td>
+                                <td>Pure context engineering direct to clipboard. 🪄</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>🔮 Quickstart Instructions</h3>
+                    <p><strong>1. Load Text Structures:</strong> Simply drag and drop any unencrypted <code>.epub</code> book file directly anywhere onto this layout window. The parsing engine maps chapters instantaneously inside the sidebar index panel.</p>
+                    <p><strong>2. Trigger Prompt Packages:</strong> Highlight text strings anywhere inside an active text segment. A contextual prompt harness array will materialize immediately above your cursor. Click an operational asset profile to instantly package the selection into structured prompt contexts copied directly to your clipboard.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Context Selection Action Element Overlay -->
+    <div class="context-bubble" id="harness-bubble">
+        <button class="bubble-action" onclick="executeContextHarness('extract')">⚡ Data Extract</button>
+        <button class="bubble-action" onclick="executeContextHarness('explain')">🧠 Deconstruct</button>
+        <button class="bubble-action" onclick="executeContextHarness('refactor')">🛠️ Refactor</button>
+    </div>
+
+    <!-- Notification Toast component -->
+    <div class="bubble-toast" id="toast-notification">Context package anchored directly to clipboard!</div>
+
+    <script>
+        // System State
+        let currentBookData = { chapters: [] };
+        let activePacerInterval = null;
+        let pacerState = { active: false, paragraphIndex: 0, sentenceIndex: 0, sentences: [] };
+        let selectedPromptText = "";
+
+        // UI Initialization Hooks
+        document.addEventListener('DOMContentLoaded', () => {
+            const workspaceContainer = document.body;
             
-            chapterIdx++;
-          }
-          
-          if(currentBookData.chapters.length > 0) renderChapter(0);
-          showToast("Book loaded successfully");
-        } catch (err) {
-          console.error(err);
-          alert("Error parsing EPUB structure.");
+            workspaceContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                document.getElementById('drop-zone').classList.add('dragover');
+            });
+
+            workspaceContainer.addEventListener('dragleave', () => {
+                document.getElementById('drop-zone').classList.remove('dragover');
+            });
+
+            workspaceContainer.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                document.getElementById('drop-zone').classList.remove('dragover');
+                const droppedFile = e.dataTransfer.files[0];
+                if (droppedFile && droppedFile.name.endsWith('.epub')) {
+                    await ingestEpubData(droppedFile);
+                }
+            });
+
+            // Initialize Context Bubble listeners
+            document.addEventListener('selectionchange', handleTextSelectionInspection);
+        });
+
+        function showHelpDocumentation() {
+            location.reload(); // Quick reset back to baseline view configuration
         }
-      };
-      reader.readAsArrayBuffer(file);
-    }
 
-    // Selection Tracking Mechanics
-    document.getElementById('workspace').addEventListener('mouseup', () => {
-      const selection = window.getSelection();
-      const selectedText = selection.toString().trim();
-      const bubble = document.getElementById('action-bubble');
-      
-      if (selectedText.length > 0) {
-        activeSelection = selectedText;
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        const workspace = document.getElementById('workspace');
-        
-        bubble.style.left = `${rect.left + workspace.scrollLeft + (rect.width/2) - 120}px`;
-        bubble.style.top = `${rect.top + workspace.scrollTop - 45}px`;
-        bubble.style.display = 'flex';
-      } else {
-        bubble.style.display = 'none';
-      }
-    });
+        // Core EPUB Parsing Engine Configuration
+        async function ingestEpubData(fileData) {
+            try {
+                const loadedZip = await JSZip.loadAsync(fileData);
+                const manifestFileKey = Object.keys(loadedZip.files).find(key => key.endsWith('.opf'));
+                
+                if (!manifestFileKey) {
+                    alert('Invalid package system structure encountered: OPF content not located.');
+                    return;
+                }
 
-    document.getElementById('workspace').addEventListener('scroll', () => {
-      if (!isQuietFocus) return;
-      evaluateActiveFocusTarget();
-    });
+                const rawOpfText = await loadedZip.files[manifestFileKey].async('string');
+                const parsingDocument = new DOMParser().parseFromString(rawOpfText, 'text/xml');
+                
+                // Track metadata identifiers
+                const titleNode = parsingDocument.querySelector('title');
+                const configuredTitle = titleNode ? titleNode.textContent : "Ingested Workspace Masterpiece";
+                
+                // Track internal asset mappings
+                const manifestedItems = Array.from(parsingDocument.querySelectorAll('item'));
+                const spineItemRefs = Array.from(parsingDocument.querySelectorAll('itemref'));
+                
+                const itemLookupMap = {};
+                manifestedItems.forEach(item => {
+                    itemLookupMap[item.getAttribute('id')] = item.getAttribute('href');
+                });
 
-    function renderChapter(index) {
-      const items = document.querySelectorAll('.chapter-nav-item');
-      items.forEach(el => el.classList.remove('active'));
-      if(items[index]) items[index].classList.add('active');
+                const rootPathFolder = manifestFileKey.substring(0, manifestFileKey.lastIndexOf('/') + 1);
+                currentBookData.chapters = [];
 
-      const container = document.getElementById('book-content');
-      container.innerHTML = `<h2 style="font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 32px;">${currentBookData.chapters[index].title}</h2>` + currentBookData.chapters[index].content;
-      
-      const wordCount = container.innerText.split(/\s+/).length;
-      wordsSinceLastReset += wordCount;
+                for (let spineElement of spineItemRefs) {
+                    const matchedId = spineElement.getAttribute('idref');
+                    const relativeTargetHref = itemLookupMap[matchedId];
+                    if (relativeTargetHref) {
+                        const fullyResolvedKey = rootPathFolder + relativeTargetHref;
+                        const individualFileAsset = loadedZip.files[fullyResolvedKey];
+                        if (individualFileAsset) {
+                            const processingHtmlText = await individualFileAsset.async('string');
+                            const elementBodyParser = new DOMParser().parseFromString(processingHtmlText, 'text/html');
+                            const completeTextBody = elementBodyParser.body.innerHTML;
+                            
+                            // Capture readable header layout strings
+                            let displayLabel = elementBodyParser.body.querySelector('h1, h2, h3')?.textContent || `Chapter ${currentBookData.chapters.length + 1}`;
+                            if(displayLabel.length > 32) displayLabel = displayLabel.substring(0, 30) + '...';
+                            
+                            currentBookData.chapters.push({
+                                title: displayLabel.trim(),
+                                content: completeTextBody
+                            });
+                        }
+                    }
+                }
 
-      const workspace = document.getElementById('workspace');
-      workspace.scrollTop = 0;
-      
-      if (isQuietFocus) {
-        setTimeout(evaluateActiveFocusTarget, 50);
-      }
-      
-      if (wordsSinceLastReset >= RESET_THRESHOLD_WORDS) {
-        setTimeout(triggerCognitiveResetInterval, 800);
-      }
-    }
-
-    /* Focus Modality Features */
-    function toggleQuietFocus() {
-      isQuietFocus = !isQuietFocus;
-      const btn = document.getElementById('btn-quiet');
-      const workspace = document.getElementById('workspace');
-      
-      if (isQuietFocus) {
-        btn.classList.add('active');
-        workspace.classList.add('quiet-focus-active');
-        evaluateActiveFocusTarget();
-      } else {
-        btn.classList.remove('active');
-        workspace.classList.remove('quiet-focus-active');
-        const elements = workspace.querySelectorAll('p');
-        elements.forEach(el => el.classList.remove('active-focus-target'));
-      }
-    }
-
-    function evaluateActiveFocusTarget() {
-      const workspace = document.getElementById('workspace');
-      const elements = workspace.querySelectorAll('p');
-      const workspaceBounds = workspace.getBoundingClientRect();
-      const centerLine = workspaceBounds.top + (workspaceBounds.height / 3);
-
-      let closestElement = null;
-      let minDistance = Infinity;
-
-      elements.forEach(el => {
-        const bounds = el.getBoundingClientRect();
-        const elementCenter = bounds.top + (bounds.height / 2);
-        const distance = Math.abs(centerLine - elementCenter);
-        
-        el.classList.remove('active-focus-target');
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestElement = el;
+                renderNavigationSpine(configuredTitle);
+            } catch (processingException) {
+                console.error(processingException);
+                alert('Parsing failed to map resources inside this standard EPUB file structure.');
+            }
         }
-      });
 
-      if (closestElement) {
-        closestElement.classList.add('active-focus-target');
-      }
-    }
+        function renderNavigationSpine(bookTitleText) {
+            document.getElementById('book-title-label').textContent = bookTitleText;
+            const collectionTarget = document.getElementById('epub-chapters-list');
+            collectionTarget.innerHTML = '';
+            
+            currentBookData.chapters.forEach((chapterItem, uniqueIndex) => {
+                const itemNode = document.createElement('li');
+                itemNode.className = 'chapter-item';
+                itemNode.textContent = chapterItem.title;
+                itemNode.onclick = () => launchActiveChapterView(uniqueIndex, itemNode);
+                collectionTarget.appendChild(itemNode);
+            });
 
-    function togglePacingLine() {
-      isPacing = !isPacing;
-      const btn = document.getElementById('btn-pacing');
-      const line = document.getElementById('pacing-line');
-      const workspace = document.getElementById('workspace');
-      
-      if (isPacing) {
-        btn.classList.add('active');
-        line.style.display = 'block';
-        line.style.top = `${workspace.scrollTop + 150}px`;
-        startPacingEngine();
-      } else {
-        btn.classList.remove('active');
-        line.style.display = 'none';
-        clearInterval(pacingInterval);
-      }
-    }
-
-    function updateWpm() {
-      currentWpm = parseInt(document.getElementById('pacing-wpm').value);
-      if (isPacing) {
-        clearInterval(pacingInterval);
-        startPacingEngine();
-      }
-    }
-
-    function startPacingEngine() {
-      const workspace = document.getElementById('workspace');
-      const line = document.getElementById('pacing-line');
-      
-      const linesPerMinute = currentWpm / 12;
-      const pixelsPerMinute = linesPerMinute * 38;
-      const pixelsPerSecond = pixelsPerMinute / 60;
-      const intervalMs = 40;
-      const pixelsPerTick = pixelsPerSecond * (intervalMs / 1000);
-
-      let currentTop = parseFloat(line.style.top);
-
-      pacingInterval = setInterval(() => {
-        currentTop += pixelsPerTick;
-        line.style.top = `${currentTop}px`;
-
-        const bounds = line.getBoundingClientRect();
-        const workspaceBounds = workspace.getBoundingClientRect();
-        
-        if (bounds.bottom > workspaceBounds.bottom - 150) {
-          workspace.scrollTop += pixelsPerTick;
+            document.getElementById('dynamic-chapters-wrapper').style.display = 'block';
+            
+            // Auto-advance directly into initial chapter layer mapping
+            if (currentBookData.chapters.length > 0) {
+                const firstElementNode = collectionTarget.firstElementChild;
+                launchActiveChapterView(0, firstElementNode);
+            }
         }
-      }, intervalMs);
-    }
 
-    /* Dopamine Reinforcement Loop Hooks */
-    function executeHarnessAction(mode) {
-      let systemPrompt = "";
-      if (mode === 'deconstruct') {
-        systemPrompt = "Deconstruct the core architectural claims, implicit assumptions, and empirical points inside this text node:\n\n";
-      } else if (mode === 'mental-model') {
-        systemPrompt = "Map this text block into an elegant, physical analog mechanism or systems engineering mental framework:\n\n";
-      } else if (mode === 'quiz') {
-        systemPrompt = "Produce 3 advanced conceptual active recall testing prompts built solely from this reading profile. Keep answers nested inside closed dropdown containers:\n\n";
-      }
+        function launchActiveChapterView(index, DOMNodeRef) {
+            // Clean dynamic structures
+            document.querySelectorAll('.chapter-item').forEach(el => el.classList.remove('active'));
+            DOMNodeRef.classList.add('active');
+            
+            // Re-allocate active textual payloads
+            const viewportTarget = document.getElementById('render-target');
+            viewportTarget.className = "chapter-viewport";
+            viewportTarget.innerHTML = currentBookData.chapters[index].content;
+            
+            // Enforce layout tracking wrappers down down clean semantic paragraphs
+            const paragraphs = viewportTarget.querySelectorAll('p');
+            if (paragraphs.length === 0) {
+                // If it's a legacy flat text structure wrap elements cleanly
+                const textBackupContent = viewportTarget.innerHTML;
+                viewportTarget.innerHTML = `<p>${textBackupContent.split('<br>').join('</p><p>')}</p>`;
+            }
 
-      const fullPayload = `${systemPrompt}<reading_context>\n${activeSelection}\n</reading_context>`;
-
-      navigator.clipboard.writeText(fullPayload).then(() => {
-        showToast("Harness context copied to clipboard");
-        document.getElementById('action-bubble').style.display = 'none';
-        window.getSelection().removeAllRanges();
-        
-        registerDopamineRewardTick();
-      });
-    }
-
-    function registerDopamineRewardTick() {
-      const countEl = document.getElementById('streak-count');
-      let count = parseInt(countEl.innerText);
-      count++;
-      countEl.innerText = count;
-
-      const canvas = document.getElementById('constellation-canvas');
-      const node = document.createElement('div');
-      node.className = 'constellation-node';
-      canvas.appendChild(node);
-    }
-
-    /* NSDR Integration */
-    let nsdrTimer = null;
-    function triggerCognitiveResetInterval() {
-      if (isPacing) togglePacingLine();
-      
-      wordsSinceLastReset = 0;
-      const shield = document.getElementById('reset-shield');
-      const circle = document.getElementById('nsdr-circle');
-      shield.style.display = 'flex';
-
-      let elapsedSeconds = 0;
-      const runRespirationCycle = () => {
-        let phase = elapsedSeconds % 12;
-        if (phase < 4) {
-          circle.innerText = "Inhale";
-          circle.style.transform = `scale(${1 + (phase * 0.08)})`;
-        } else if (phase < 6) {
-          circle.innerText = "Hold";
-        } else {
-          let exhalePhase = phase - 6;
-          circle.innerText = "Exhale";
-          circle.style.transform = `scale(${1.32 - (exhalePhase * 0.05)})`;
+            // Flush out active running timers on context shifts
+            haltPacingLoop();
+            document.getElementById('reader-scroll-viewport').scrollTop = 0;
         }
-        elapsedSeconds++;
-        
-        if (elapsedSeconds >= 90) {
-          terminateResetEarly();
+
+        // Tactical Context Bubble Architecture Hook
+        function handleTextSelectionInspection() {
+            const currentSelection = window.getSelection();
+            const boundaryText = currentSelection.toString().trim();
+
+            if (!boundaryText || boundaryText.length === 0) {
+                hideHarnessBubble();
+                return;
+            }
+
+            selectedPromptText = boundaryText;
+            
+            const selectionRange = currentSelection.getRangeAt(0);
+            const clientBoundaries = selectionRange.getBoundingClientRect();
+            
+            const viewportOffset = document.getElementById('reader-scroll-viewport').getBoundingClientRect();
+            const elementBubble = document.getElementById('harness-bubble');
+            
+            // Position overlay exactly contextually over selection area bounds
+            elementBubble.style.top = `${window.scrollY + clientBoundaries.top - viewportOffset.top - 45 + document.getElementById('reader-scroll-viewport').scrollTop}px`;
+            elementBubble.style.left = `${window.scrollX + clientBoundaries.left + (clientBoundaries.width / 2) - 120}px`;
+            elementBubble.classList.add('visible');
         }
-      };
 
-      runRespirationCycle();
-      nsdrTimer = setInterval(runRespirationCycle, 1000);
-    }
+        function hideHarnessBubble() {
+            document.getElementById('harness-bubble').classList.remove('visible');
+        }
 
-    function terminateResetEarly() {
-      clearInterval(nsdrTimer);
-      document.getElementById('reset-shield').style.display = 'none';
-      showToast("Cognitive sync complete");
-    }
+        // Prompt Packing Module
+        function executeContextHarness(strategyModality) {
+            let systematicPromptPayload = "";
+            const dynamicTimestamp = new Date().toISOString();
 
-    function showToast(msg) {
-      const toast = document.getElementById('status-toast');
-      toast.innerText = msg;
-      toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 3000);
-    }
-  </script>
+            switch(strategyModality) {
+                case 'extract':
+                    systematicPromptPayload = `<prompt_package type="data_extraction" generated="${dynamicTimestamp}">
+<system_directive>
+You are an advanced cognitive extraction mechanism. Isolate all essential concepts, core assumptions, insights, and actionable metrics present in the source material. Organize data cleanly into categorical markdown nodes. Avoid filler and editorial preamble.
+</system_directive>
+<context_source>
+${selectedPromptText}
+</context_source>
+</prompt_package>`;
+                    break;
+                case 'explain':
+                    systematicPromptPayload = `<prompt_package type="deconstruct_analysis" generated="${dynamicTimestamp}">
+<system_directive>
+Deconstruct the following architectural arguments or conceptual statements. Trace any underlying root assertions, highlight downstream logical implications, and synthesize an accessible first-principles summary.
+</system_directive>
+<context_source>
+${selectedPromptText}
+</context_source>
+</prompt_package>`;
+                    break;
+                case 'refactor':
+                    systematicPromptPayload = `<prompt_package type="conceptual_refactor" generated="${dynamicTimestamp}">
+<system_directive>
+Re-engineer the core thesis or logic structures present in this text. Identify logical optimization points, structural fragmentation, or flaws, and draft a clean, alternative synthesis layout framework.
+</system_directive>
+<context_source>
+${selectedPromptText}
+</context_source>
+</prompt_package>`;
+                    break;
+            }
+
+            // Secure programmatic transfer to operating clipboard safely
+            navigator.clipboard.writeText(systematicPromptPayload).then(() => {
+                showToastNotification();
+                window.getSelection().removeAllRanges();
+                hideHarnessBubble();
+            }).catch(err => {
+                console.error('Insecure clipboard interaction failed: ', err);
+            });
+        }
+
+        function showToastNotification() {
+            const toast = document.getElementById('toast-notification');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Focus Processing Neurobiology Architecture Engines
+        function toggleQuietEye() {
+            const viewport = document.getElementById('render-target');
+            const toggleButton = document.getElementById('toggle-quiet-eye');
+            
+            viewport.classList.toggle('quiet-eye-active');
+            
+            if(viewport.classList.contains('quiet-eye-active')) {
+                toggleButton.classList.add('active');
+                toggleButton.querySelector('span').textContent = "On";
+                evaluateQuietEyeState();
+            } else {
+                toggleButton.classList.remove('active');
+                toggleButton.querySelector('span').textContent = "Off";
+                // Restore tracking values clear
+                viewport.querySelectorAll('p').forEach(p => p.classList.remove('focused-sentence-para'));
+            }
+        }
+
+        function handleViewportScroll() {
+            if (document.getElementById('render-target').classList.contains('quiet-eye-active')) {
+                evaluateQuietEyeState();
+            }
+        }
+
+        function evaluateQuietEyeState() {
+            const paragraphBlocks = document.getElementById('render-target').querySelectorAll('p');
+            const viewportBoundary = document.getElementById('reader-scroll-viewport').getBoundingClientRect();
+            const viewportCenterY = viewportBoundary.top + (viewportBoundary.height / 2);
+
+            let closestParagraph = null;
+            let minimalDistance = Infinity;
+
+            paragraphBlocks.forEach(paraElement => {
+                const parameters = paraElement.getBoundingClientRect();
+                const elementCenterY = parameters.top + (parameters.height / 2);
+                const absoluteDistance = Math.abs(viewportCenterY - elementCenterY);
+                
+                paraElement.classList.remove('focused-sentence-para');
+                
+                if (absoluteDistance < minimalDistance) {
+                    minimalDistance = absoluteDistance;
+                    closestParagraph = paraElement;
+                }
+            });
+
+            if (closestParagraph) {
+                closestParagraph.classList.add('focused-sentence-para');
+            }
+        }
+
+        // Optokinetic Pacing Pipeline Setup
+        function updatePacingOutput(value) {
+            document.getElementById('speed-indicator').textContent = `${value} WPM`;
+            if (pacerState.active) {
+                haltPacingLoop();
+                initiatePacingLoop();
+            }
+        }
+
+        function togglePacingEngine() {
+            const pacingToggleBtn = document.getElementById('toggle-pacer');
+            pacerState.active = !pacerState.active;
+
+            if (pacerState.active) {
+                pacingToggleBtn.classList.add('active');
+                pacingToggleBtn.querySelector('span').textContent = "On";
+                preparePacingSentences();
+                initiatePacingLoop();
+            } else {
+                pacingToggleBtn.classList.remove('active');
+                pacingToggleBtn.querySelector('span').textContent = "Off";
+                haltPacingLoop();
+            }
+        }
+
+        function preparePacingSentences() {
+            const paras = Array.from(document.getElementById('render-target').querySelectorAll('p'));
+            pacerState.sentences = [];
+            pacerState.paragraphIndex = 0;
+            pacerState.sentenceIndex = 0;
+
+            paras.forEach((paraNode, pIdx) => {
+                // Approximate sentence tokens parsing patterns safely
+                const segmentedMatches = paraNode.textContent.match(/[^.!?]+[.!?]+(\s|$)/g) || [paraNode.textContent];
+                segmentedMatches.forEach((sentenceText) => {
+                    const wordVolume = sentenceText.trim().split(/\s+/).length;
+                    pacerState.sentences.push({
+                        text: sentenceText.trim(),
+                        paragraphElement: paraNode,
+                        wordCount: wordVolume
+                    });
+                });
+            });
+        }
+
+        function initiatePacingLoop() {
+            if (pacerState.sentences.length === 0 || pacerState.sentenceIndex >= pacerState.sentences.length) return;
+
+            const targetPacingData = pacerState.sentences[pacerState.sentenceIndex];
+            const currentWPM = parseInt(document.getElementById('pacer-speed').value);
+            
+            // Equation parsing timing interval for targeted array blocks
+            const durationMs = (targetPacingData.wordCount / currentWPM) * 60 * 1000;
+            const targetLine = document.getElementById('pacing-line');
+            
+            // Align pacer system coordinates
+            const paragraphCoords = targetPacingData.paragraphElement.offsetTop;
+            const paragraphHeight = targetPacingData.paragraphElement.offsetHeight;
+            
+            targetLine.style.opacity = "0.7";
+            targetLine.style.top = `${paragraphCoords + paragraphHeight}px`;
+
+            // Auto center viewport bounds smoothly over fast tracking pacing lines
+            targetPacingData.paragraphElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            activePacerInterval = setTimeout(() => {
+                pacerState.sentenceIndex++;
+                initiatePacingLoop();
+            }, durationMs);
+        }
+
+        function haltPacingLoop() {
+            clearTimeout(activePacerInterval);
+            document.getElementById('pacing-line').style.opacity = "0";
+        }
+    </script>
 </body>
 </html>
