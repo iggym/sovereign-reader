@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sovereign Neuro-Reader Harness</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d0e15;
+      --surface: #161622;
+      --text: #e4e6ef;
+      --accent: #bb9af7;
+      --muted: #565f89;
+      --success: #9ece6a;
+      --warning: #e0af68;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Workspace Panels */
+    #sidebar {
+      width: 280px;
+      background: var(--surface);
+      border-right: 1px solid #24283b;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+    #workspace {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 60px;
+      box-sizing: border-box;
+      line-height: 1.8;
+      font-size: 19px;
+      position: relative;
+      transition: opacity 0.4s ease;
+    }
+    
+    /* Neurobiology Feature Mechanics */
+    .quiet-focus-active p {
+      opacity: 0.15;
+      transition: opacity 0.3s ease;
+      filter: blur(1px);
+    }
+    .quiet-focus-active p.active-focus-target {
+      opacity: 1;
+      filter: blur(0);
+      position: relative;
+    }
+    .quiet-focus-active p.active-focus-target::before {
+      content: "•";
+      position: absolute;
+      left: -20px;
+      color: var(--accent);
+      font-weight: bold;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+    
+    #pacing-line {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      box-shadow: 0 0 8px var(--accent);
+      display: none;
+      pointer-events: none;
+      z-index: 5;
+    }
+    
+    /* Dopamine Integration Elements */
+    .constellation-node {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin: 2px;
+      box-shadow: 0 0 6px var(--accent);
+      animation: spark 0.5s ease-out;
+    }
+    @keyframes spark {
+      0% { transform: scale(3); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Cognitive Reset Shield */
+    #reset-shield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #090a10;
+      z-index: 10000;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    #nsdr-circle {
+      width: 120px;
+      height: 120px;
+      border: 4px solid var(--muted);
+      border-radius: 50%;
+      margin: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      color: var(--accent);
+      box-shadow: 0 0 20px rgba(187, 154, 247, 0.1);
+    }
+    
+    /* Interface Components */
+    .control-group {
+      background: #1f2335;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      border: 1px solid #292e42;
+    }
+    .control-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .toggle-btn {
+      background: #24283b;
+      color: var(--text);
+      border: 1px solid #414868;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .toggle-btn.active {
+      background: var(--accent);
+      color: #1a1b26;
+      border-color: var(--accent);
+    }
+    .chapter-nav-item {
+      padding: 8px 10px;
+      margin: 4px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #787c99;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chapter-nav-item.active { background: #24283b; color: var(--accent); }
+    #action-bubble {
+      position: absolute;
+      background: var(--surface);
+      border: 1px solid #414868;
+      border-radius: 8px;
+      padding: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      display: none;
+      gap: 4px;
+      z-index: 1000;
+    }
+    .harness-btn {
+      background: #1f2335;
+      color: var(--text);
+      border: 1px solid #414868;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .harness-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #file-input { display: none; }
+    .upload-label {
+      background: var(--accent);
+      color: #1a1b26;
+      padding: 10px;
+      text-align: center;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 16px;
+      display: block;
+    }
+    #status-toast {
+      position: fixed;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--success);
+      color: #1a1b26;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      display: none;
+      z-index: 2000;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <label for="file-input" class="upload-label">Load Local EPUB</label>
+    <input type="file" id="file-input" accept=".epub">
+    
+    <!-- Neurobiology Control Deck -->
+    <div class="control-group">
+      <span class="control-label">Arousal & Focus</span>
+      <button class="toggle-btn" id="btn-quiet" onclick="toggleQuietFocus()">Quiet Eye Focus</button>
+      <button class="toggle-btn" id="btn-pacing" onclick="togglePacingLine()">Optokinetic Pacer</button>
+      <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+        <span style="font-size: 11px; color: var(--muted)">WPM:</span>
+        <input type="range" id="pacing-wpm" min="200" max="700" value="350" step="25" onchange="updateWpm()" style="flex: 1; accent-color: var(--accent);">
+      </div>
+    </div>
+
+    <!-- Dopamine Ledger Tracker -->
+    <div class="control-group">
+      <span class="control-label">Cognitive Scaffolding</span>
+      <div style="font-size: 12px; margin-bottom: 4px;">Streak Metric: <span id="streak-count" style="color: var(--warning); font-weight: bold;">0</span> links</div>
+      <div id="constellation-canvas" style="min-height: 30px; background: #0f1015; border-radius: 4px; padding: 4px; display: flex; flex-wrap: wrap;"></div>
+    </div>
+
+    <div style="font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: bold; text-transform: uppercase;">Chapters</div>
+    <div id="chapter-list" style="flex: 1; overflow-y: auto;"></div>
+  </div>
+
+  <div id="workspace">
+    <div id="pacing-line"></div>
+    <div id="book-content" style="max-width: 680px; margin: 0 auto; padding-bottom: 200px;">
+      <h1 style="color: var(--accent); margin-top: 0;">Sovereign Neuro-Reader</h1>
+      <p>Load a clean, DRM-free EPUB file to unlock your high-yield learning space. All processing, parsing, and context mapping strategies execute strictly layout-side inside your browser sandbox.</p>
+    </div>
+  </div>
+
+  <!-- Floating Context Engine Options -->
+  <div id="action-bubble">
+    <button class="harness-btn" onclick="executeHarnessAction('deconstruct')">Deconstruct</button>
+    <button class="harness-btn" onclick="executeHarnessAction('mental-model')">Mental Model</button>
+    <button class="harness-btn" onclick="executeHarnessAction('quiz')">Active Quiz</button>
+  </div>
+
+  <!-- Non-Sleep Deep Rest System Overlay -->
+  <div id="reset-shield">
+    <h2 style="color: var(--accent); font-weight: 300; margin: 0;">Cognitive Reset Interval</h2>
+    <p style="color: var(--muted); max-width: 400px; font-size: 15px; margin: 10px 0 0 0;">Flushing cellular accumulation and resetting baseline attention mechanisms via structural respiration pacing.</p>
+    <div id="nsdr-circle">Inhale</div>
+    <button class="harness-btn" onclick="terminateResetEarly()" style="border-color: var(--muted); color: var(--muted);">Skip Reset</button>
+  </div>
+
+  <div id="status-toast"></div>
+
+  <script>
+    let currentBookData = { chapters: [], title: "" };
+    let activeSelection = "";
+    let isQuietFocus = false;
+    let isPacing = false;
+    let pacingInterval = null;
+    let currentWpm = 350;
+    
+    // Cognitive load tracking variables
+    let totalWordsReadSession = 0;
+    let wordsSinceLastReset = 0;
+    const RESET_THRESHOLD_WORDS = 4000; // Trigger NSDR break roughly every 4000 words read
+
+    // Selection Tracking Mechanics
+    document.getElementById('workspace').addEventListener('mouseup', (e) => {
+      const selection = window.getSelection();
+      const selectedText = selection.toString().trim();
+      const bubble = document.getElementById('action-bubble');
+      
+      if (selectedText.length > 0) {
+        activeSelection = selectedText;
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const workspace = document.getElementById('workspace');
+        
+        bubble.style.left = `${rect.left + workspace.scrollLeft + (rect.width/2) - 120}px`;
+        bubble.style.top = `${rect.top + workspace.scrollTop - 45}px`;
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
+      }
+    });
+
+    // Handle focus target highlighting on scroll or mouse clicks
+    document.getElementById('workspace').addEventListener('scroll', () => {
+      if (!isQuietFocus) return;
+      evaluateActiveFocusTarget();
+    });
+
+    // EPUB Package Processing Pipeline
+    document.getElementById('file-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const zip = await JSZip.loadAsync(event.target.result);
+          currentBookData.chapters = [];
+          
+          const filePaths = Object.keys(zip.files).filter(path => path.endsWith('.html') || path.endsWith('.xhtml'));
+          filePaths.sort();
+
+          const listContainer = document.getElementById('chapter-list');
+          listContainer.innerHTML = "";
+
+          let chapterIdx = 0;
+          for (const path of filePaths) {
+            const rawText = await zip.file(path).async("text");
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(rawText, "text/html");
+            
+            // Unroll structural text contents safely
+            if (doc.body) {
+              // Convert clean semantic hierarchy elements for granular control loops
+              const headings = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6');
+              headings.forEach(h => h.style.color = 'var(--accent)');
+            }
+            
+            const bodyContent = doc.body ? doc.body.innerHTML : rawText;
+            const title = doc.querySelector('title')?.innerText || `Section ${chapterIdx + 1}`;
+
+            currentBookData.chapters.push({ title, content: bodyContent });
+
+            const item = document.createElement('div');
+            item.className = 'chapter-nav-item';
+            item.innerText = title;
+            item.dataset.index = chapterIdx;
+            item.onclick = () => renderChapter(parseInt(item.dataset.index));
+            listContainer.appendChild(item);
+            
+            chapterIdx++;
+          }
+          
+          if(currentBookData.chapters.length > 0) renderChapter(0);
+        } catch (err) {
+          console.error(err);
+          alert("Error unpacking EPUB archive container.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function renderChapter(index) {
+      const items = document.querySelectorAll('.chapter-nav-item');
+      items.forEach(el => el.classList.remove('active'));
+      if(items[index]) items[index].classList.add('active');
+
+      const container = document.getElementById('book-content');
+      container.innerHTML = `<h2>${currentBookData.chapters[index].title}</h2>` + currentBookData.chapters[index].content;
+      
+      // Calculate chapter length to track cognitive load intervals
+      const wordCount = container.innerText.split(/\s+/).length;
+      wordsSinceLastReset += wordCount;
+      totalWordsReadSession += wordCount;
+
+      const workspace = document.getElementById('workspace');
+      workspace.scrollTop = 0;
+      
+      if (isQuietFocus) {
+        setTimeout(evaluateActiveFocusTarget, 50);
+      }
+      
+      // Evaluate if the cognitive burden threshold requires initiating an NSDR interval
+      if (wordsSinceLastReset >= RESET_THRESHOLD_WORDS) {
+        setTimeout(triggerCognitiveResetInterval, 800);
+      }
+    }
+
+    /* Feature Loop 1: Optokinetic Focus Layouts */
+    function toggleQuietFocus() {
+      isQuietFocus = !isQuietFocus;
+      const btn = document.getElementById('btn-quiet');
+      const workspace = document.getElementById('workspace');
+      
+      if (isQuietFocus) {
+        btn.classList.add('active');
+        workspace.classList.add('quiet-focus-active');
+        evaluateActiveFocusTarget();
+      } else {
+        btn.classList.remove('active');
+        workspace.classList.remove('quiet-focus-active');
+        const elements = workspace.querySelectorAll('p');
+        elements.forEach(el => el.classList.remove('active-focus-target'));
+      }
+    }
+
+    function evaluateActiveFocusTarget() {
+      const workspace = document.getElementById('workspace');
+      const elements = workspace.querySelectorAll('p');
+      const workspaceBounds = workspace.getBoundingClientRect();
+      const centerLine = workspaceBounds.top + (workspaceBounds.height / 3); // Position accent slightly above midpoint
+
+      let closestElement = null;
+      let minDistance = Infinity;
+
+      elements.forEach(el => {
+        const bounds = el.getBoundingClientRect();
+        const elementCenter = bounds.top + (bounds.height / 2);
+        const distance = Math.abs(centerLine - elementCenter);
+        
+        el.classList.remove('active-focus-target');
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestElement = el;
+        }
+      });
+
+      if (closestElement) {
+        closestElement.classList.add('active-focus-target');
+      }
+    }
+
+    function togglePacingLine() {
+      isPacing = !isPacing;
+      const btn = document.getElementById('btn-pacing');
+      const line = document.getElementById('pacing-line');
+      const workspace = document.getElementById('workspace');
+      
+      if (isPacing) {
+        btn.classList.add('active');
+        line.style.display = 'block';
+        line.style.top = `${workspace.scrollTop + 150}px`;
+        startPacingEngine();
+      } else {
+        btn.classList.remove('active');
+        line.style.display = 'none';
+        clearInterval(pacingInterval);
+      }
+    }
+
+    function updateWpm() {
+      currentWpm = parseInt(document.getElementById('pacing-wpm').value);
+      if (isPacing) {
+        clearInterval(pacingInterval);
+        startPacingEngine();
+      }
+    }
+
+    function startPacingEngine() {
+      const workspace = document.getElementById('workspace');
+      const line = document.getElementById('pacing-line');
+      
+      // Approximate vertical advance mapping: ~35 pixels per line of text
+      // 350 WPM at an average of 12 words per line translates to ~30 lines per minute
+      const linesPerMinute = currentWpm / 12;
+      const pixelsPerMinute = linesPerMinute * 38;
+      const pixelsPerSecond = pixelsPerMinute / 60;
+      const intervalMs = 40; // ~25 updates per second for fluid tracking profiles
+      const pixelsPerTick = pixelsPerSecond * (intervalMs / 1000);
+
+      let currentTop = parseFloat(line.style.top);
+
+      pacingInterval = setInterval(() => {
+        currentTop += pixelsPerTick;
+        line.style.top = `${currentTop}px`;
+
+        // Automatically auto-scroll workspace viewpoint to match pacer location parameters
+        const bounds = line.getBoundingClientRect();
+        const workspaceBounds = workspace.getBoundingClientRect();
+        
+        if (bounds.bottom > workspaceBounds.bottom - 150) {
+          workspace.scrollTop += pixelsPerTick;
+        }
+      }, intervalMs);
+    }
+
+    /* Feature Loop 2: Dopamine Validation Architecture */
+    function executeHarnessAction(mode) {
+      let systemPrompt = "";
+      if (mode === 'deconstruct') {
+        systemPrompt = "Analyze this text. Detail core logical assertions, hidden structural assumptions, and counterintuitive metrics:\n\n";
+      } else if (mode === 'mental-model') {
+        systemPrompt = "Map the mechanics detailed below into an intuitive physical analogy or functional engineering mental model:\n\n";
+      } else if (mode === 'quiz') {
+        systemPrompt = "Generate 3 rigorous conceptual active recall validation questions testing this text configuration. Keep answers hidden in down-toggled detail blocks:\n\n";
+      }
+
+      const fullPayload = `${systemPrompt}<reading_context>\n${activeSelection}\n</reading_context>`;
+
+      navigator.clipboard.writeText(fullPayload).then(() => {
+        showToast("✓ Context Harness payload generated and copied.");
+        document.getElementById('action-bubble').style.display = 'none';
+        window.getSelection().removeAllRanges();
+        
+        // Reward cycle reinforcement loop
+        registerDopamineRewardTick();
+      });
+    }
+
+    function registerDopamineRewardTick() {
+      // Advance visible tracking metric metrics
+      const countEl = document.getElementById('streak-count');
+      let count = parseInt(countEl.innerText);
+      count++;
+      countEl.innerText = count;
+
+      // Append visual feedback anchor element to side-dock module layout
+      const canvas = document.getElementById('constellation-canvas');
+      const node = document.createElement('div');
+      node.className = 'constellation-node';
+      canvas.appendChild(node);
+    }
+
+    /* Feature Loop 3: Progressive Fatigue Recovery Protocols */
+    let nsdrTimer = null;
+    function triggerCognitiveResetInterval() {
+      // Clear movement trackers to prevent disruption states
+      if (isPacing) togglePacingLine();
+      
+      wordsSinceLastReset = 0;
+      const shield = document.getElementById('reset-shield');
+      const circle = document.getElementById('nsdr-circle');
+      shield.style.display = 'flex';
+
+      let elapsedSeconds = 0;
+      // Cyclical timing array mapping breathing parameters: Inhale 4s, Hold 2s, Exhale 6s
+      const runRespirationCycle = () => {
+        let phase = elapsedSeconds % 12;
+        if (phase < 4) {
+          circle.innerText = "Inhale";
+          circle.style.transform = `scale(${1 + (phase * 0.1)})`;
+          circle.style.boxShadow = "0 0 30px rgba(187, 154, 247, 0.4)";
+        } else if (phase < 6) {
+          circle.innerText = "Hold";
+        } else {
+          let exhalePhase = phase - 6;
+          circle.innerText = "Exhale";
+          circle.style.transform = `scale(${1.4 - (exhalePhase * 0.06)})`;
+          circle.style.boxShadow = "0 0 10px rgba(187, 154, 247, 0.1)";
+        }
+        elapsedSeconds++;
+        
+        // Auto-terminate deep rest block after 90 seconds (7.5 cycles)
+        if (elapsedSeconds >= 90) {
+          terminateResetEarly();
+        }
+      };
+
+      runRespirationCycle();
+      nsdrTimer = setInterval(runRespirationCycle, 1000);
+    }
+
+    function terminateResetEarly() {
+      clearInterval(nsdrTimer);
+      document.getElementById('reset-shield').style.display = 'none';
+      showToast("Cognitive state reset. Ready for next block.");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('status-toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+  </script>
+</body>
+</html>
