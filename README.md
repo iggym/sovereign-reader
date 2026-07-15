@@ -1,5 +1,7 @@
 # 🌟 Aura Reader: Your Cognitive Desk 🚀
 
+> **Live Deployment:** Run the single-file utility instantly at [iggym.github.io/sovereign-reader](https://iggym.github.io/sovereign-reader/)
+
 Hey there, fellow human! 👋 Welcome to Aura Reader — the ultimate, single-file reading sanctuary designed to turn passive reading into a high-octane data extraction sport. 🧠✨
 
 Let’s be real for a second: the modern internet is an absolute circus for your attention spans. You try to read a brilliant masterpiece, and BAM! A notification pops up, your dopamine drops, and suddenly you're scrolling videos at 2:00 AM wondering where your evening went. 🫠 We’ve all been there. No judgment.
@@ -37,21 +39,10 @@ Aura Reader adapts that exact thesis for deep, focused consumption:
 
 Ready to escape the endless scroll and rebuild your reading muscle? Follow these steps to begin.
 
-<Sequence>
-{/* Reason: Procedural installation steps where exact sequence is necessary for setup success. */}
-  <Step title="Clone or Copy the Architecture" subtitle="Under 30 seconds">
-    Download or copy the raw `index.html` file into your local environment directory.
-  </Step>
-  <Step title="Launch the Desktop Environment" subtitle="No server required">
-    Double-click `index.html` directly from your file manager. It loads instantly right in the browser.
-  </Step>
-  <Step title="Inject an EPUB File" subtitle="Zero-latency ingestion">
-    Drag any out-of-copyright or DRM-free `.epub` file directly anywhere onto the workspace window.
-  </Step>
-  <Step title="Configure Cognitive Shifting" subtitle="Tweak your parameters">
-    Toggle Quiet Eye Isolation or set your Optokinetic Tracking speed slider to hit your perfect reading flow state.
-  </Step>
-</Sequence>
+1. **Clone or Copy the Architecture:** (Under 30 seconds). Download or copy the raw `index.html` file into your local environment directory or visit the live deployment page.
+2. **Launch the Desktop Environment:** (No server required). Double-click `index.html` directly from your file manager. It loads instantly right in the browser.
+3. **Constructing Prompt Packages:** Highlight text anywhere in an active chapter block to call up the Context Bubble. Choose an operational modality to instantly construct structured system configurations (encapsulated within clean XML anchors) sent directly to your system clipboard.
+4. **Configure Cognitive Shifting:** Toggle Quiet Eye Isolation or set your Optokinetic Tracking speed slider to hit your perfect reading flow state.
 
 ---
 
@@ -69,8 +60,8 @@ Reading books changes the architecture of your mind. If you are looking for some
 
 A premium reader needs premium food. Here are the absolute best, most accessible hubs to grab out-of-copyright masterpieces completely free:
 
-*   **💎 Standard Ebooks:** The absolute gold standard. They take public domain books and beautifully re-typeset, proofread, and design elegant covers for them. They look gorgeous inside Aura Reader.
-*   **📜 Project Gutenberg:** The massive grandfather of open-source literature. Over 70,000 free ebooks waiting for you.
-*   **🏛️ Internet Archive:** A digital library containing millions of digitized texts, historical artifacts, and unique editions.
+*   **💎 [Standard Ebooks](https://standardebooks.org/):** The absolute gold standard. They take public domain books and beautifully re-typeset, proofread, and design elegant covers for them. They look gorgeous inside Aura Reader.
+*   **📜 [Project Gutenberg](https://www.gutenberg.org/):** The massive grandfather of open-source literature. Over 70,000 free ebooks waiting for you.
+*   **🏛️ [Internet Archive](https://archive.org/details/books):** A digital library containing millions of digitized texts, historical artifacts, and unique editions.
 
 Go forth, drop in a classic, build that context package streak, and let your brain breathe! You've got this. 🚀🧠🛋️
