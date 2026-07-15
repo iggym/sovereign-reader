@@ -3,299 +3,399 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sovereign Neuro-Reader Harness</title>
+  <title>Aura Reader // Sovereign Cognitive Workspace</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root {
-      --bg: #0d0e15;
-      --surface: #161622;
-      --text: #e4e6ef;
-      --accent: #bb9af7;
-      --muted: #565f89;
-      --success: #9ece6a;
-      --warning: #e0af68;
+      --bg: #0A0A0C;
+      --surface: #121215;
+      --surface-card: #1C1C21;
+      --text: #F4F4F6;
+      --text-muted: #8E8E93;
+      --accent: #6366F1;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --success: #10B981;
+      --border: #27272A;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: var(--font-sans);
       background: var(--bg);
       color: var(--text);
       display: flex;
       height: 100vh;
       overflow: hidden;
       position: relative;
+      -webkit-font-smoothing: antialiased;
     }
     
-    /* Drag-and-Drop Global Target Visual */
+    /* Drag-and-Drop Overlay HUD */
     #drop-overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(22, 22, 34, 0.95);
-      border: 4px dashed var(--accent);
+      background: rgba(10, 10, 12, 0.96);
+      border: 2px dashed var(--accent);
       box-sizing: border-box;
       z-index: 15000;
       display: none;
       justify-content: center;
       align-items: center;
       flex-direction: column;
-      pointer-events: none; /* Let drag events fall through to body */
-      transition: all 0.3s ease;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
     }
     #drop-overlay.drag-over {
       display: flex;
     }
     
-    /* Workspace Panels */
+    /* Premium Sidebar Navigation Layout */
     #sidebar {
-      width: 280px;
+      width: 300px;
       background: var(--surface);
-      border-right: 1px solid #24283b;
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      padding: 20px;
+      padding: 24px;
       box-sizing: border-box;
       z-index: 10;
     }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 4px 0;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    /* Primary Workspace Shell */
     #workspace {
       flex: 1;
       overflow-y: auto;
-      padding: 40px 60px;
+      padding: 60px 80px;
       box-sizing: border-box;
-      line-height: 1.8;
-      font-size: 19px;
+      line-height: 1.9;
+      font-size: 18px;
       position: relative;
-      transition: opacity 0.4s ease;
+      background: var(--bg);
+    }
+
+    .content-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding-bottom: 240px;
     }
     
-    /* Neurobiology Feature Mechanics */
+    /* Apple/Stripe-Style Cards */
+    .premium-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    .premium-card h3 {
+      margin-top: 0;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+    
+    /* Neurobiology Focus Engine Classes */
     .quiet-focus-active p {
-      opacity: 0.15;
-      transition: opacity 0.3s ease;
-      filter: blur(1px);
+      opacity: 0.12;
+      transition: opacity 0.4s ease, filter 0.4s ease;
+      filter: blur(2px);
     }
     .quiet-focus-active p.active-focus-target {
       opacity: 1;
       filter: blur(0);
-      position: relative;
-    }
-    .quiet-focus-active p.active-focus-target::before {
-      content: "•";
-      position: absolute;
-      left: -20px;
-      color: var(--accent);
-      font-weight: bold;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
     }
     
     #pacing-line {
       position: absolute;
       left: 0;
       width: 100%;
-      height: 2px;
+      height: 1px;
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      box-shadow: 0 0 8px var(--accent);
+      box-shadow: 0 0 12px var(--accent);
       display: none;
       pointer-events: none;
       z-index: 5;
     }
     
-    /* Dopamine Integration Elements */
+    /* Dopamine Tracker Visual Mechanics */
     .constellation-node {
       display: inline-block;
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       background: var(--accent);
       border-radius: 50%;
-      margin: 2px;
-      box-shadow: 0 0 6px var(--accent);
-      animation: spark 0.5s ease-out;
+      margin: 3px;
+      box-shadow: 0 0 8px var(--accent);
+      animation: spark 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes spark {
-      0% { transform: scale(3); opacity: 0; }
+      0% { transform: scale(4); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
     
-    /* Cognitive Reset Shield */
+    /* NSDR Shield Configuration */
     #reset-shield {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: #090a10;
+      background: var(--bg);
       z-index: 10000;
       display: none;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
+      backdrop-filter: blur(20px);
     }
     #nsdr-circle {
-      width: 120px;
-      height: 120px;
-      border: 4px solid var(--muted);
+      width: 140px;
+      height: 140px;
+      border: 1px solid var(--border);
       border-radius: 50%;
-      margin: 30px;
+      margin: 40px;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-weight: bold;
-      color: var(--accent);
-      box-shadow: 0 0 20px rgba(187, 154, 247, 0.1);
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text);
+      background: var(--surface);
+      transition: transform 1s ease-in-out, box-shadow 1s ease-in-out;
     }
     
-    /* Interface Components */
-    .control-group {
-      background: #1f2335;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 14px;
-      border: 1px solid #292e42;
-    }
+    /* Elegant Interface Controls */
     .control-label {
-      font-size: 11px;
-      color: var(--muted);
+      font-size: 10px;
+      color: var(--text-muted);
       text-transform: uppercase;
-      font-weight: bold;
-      margin-bottom: 8px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
       display: block;
     }
     .toggle-btn {
-      background: #24283b;
+      background: var(--surface);
       color: var(--text);
-      border: 1px solid #414868;
-      padding: 6px 10px;
-      font-size: 12px;
-      border-radius: 4px;
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
       cursor: pointer;
       width: 100%;
-      margin-bottom: 6px;
-      font-weight: 500;
+      margin-bottom: 8px;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+    .toggle-btn:hover {
+      background: #18181F;
+      border-color: #3F3F46;
     }
     .toggle-btn.active {
-      background: var(--accent);
-      color: #1a1b26;
+      background: var(--accent-glow);
+      color: var(--text);
       border-color: var(--accent);
     }
     .chapter-nav-item {
-      padding: 8px 10px;
-      margin: 4px 0;
+      padding: 10px 12px;
+      margin: 2px 0;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 14px;
-      color: #787c99;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      transition: all 0.2s ease;
     }
-    .chapter-nav-item.active { background: #24283b; color: var(--accent); }
+    .chapter-nav-item:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+    .chapter-nav-item.active { background: var(--surface-card); color: var(--text); border: 1px solid var(--border); }
+    
     #action-bubble {
       position: absolute;
-      background: var(--surface);
-      border: 1px solid #414868;
-      border-radius: 8px;
-      padding: 6px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       display: none;
-      gap: 4px;
+      gap: 2px;
       z-index: 1000;
     }
     .harness-btn {
-      background: #1f2335;
+      background: transparent;
       color: var(--text);
-      border: 1px solid #414868;
-      padding: 6px 10px;
+      border: none;
+      padding: 6px 14px;
       font-size: 12px;
-      border-radius: 4px;
+      font-weight: 500;
+      border-radius: 16px;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .harness-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .harness-btn:hover { background: rgba(255,255,255,0.06); }
+    
     #file-input { display: none; }
     .upload-label {
-      background: var(--accent);
-      color: #1a1b26;
-      padding: 10px;
+      background: var(--text);
+      color: var(--bg);
+      padding: 12px;
       text-align: center;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
-      margin-bottom: 16px;
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 24px;
       display: block;
+      transition: opacity 0.2s ease;
     }
+    .upload-label:hover { opacity: 0.9; }
+    
+    .library-link {
+      display: block;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      margin-bottom: 8px;
+      transition: opacity 0.2s ease;
+    }
+    .library-link:hover { opacity: 0.8; }
+    
     #status-toast {
       position: fixed;
-      bottom: 25px;
+      bottom: 32px;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--success);
-      color: #1a1b26;
-      padding: 8px 18px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: bold;
+      background: var(--text);
+      color: var(--bg);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
       display: none;
       z-index: 2000;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     }
   </style>
 </head>
 <body id="drop-target">
 
+  <!-- Drag HUD overlay -->
   <div id="drop-overlay">
-    <h1 style="color: var(--accent); pointer-events: none;">Drop EPUB Anywhere</h1>
-    <p style="color: var(--muted); pointer-events: none;">Release to load files directly into memory</p>
+    <h1 style="font-weight: 500; letter-spacing: -0.03em; margin: 0 0 8px 0;">Drop EPUB Document</h1>
+    <p style="color: var(--text-muted); font-size: 14px; margin: 0;">Release to import directly into the sandbox</p>
   </div>
 
   <div id="sidebar">
-    <label for="file-input" class="upload-label">Load Local EPUB</label>
+    <div class="brand-title">AURA READER</div>
+    <div class="brand-subtitle">Sovereign Cognitive Desk</div>
+    
+    <label for="file-input" class="upload-label">Import Local Book</label>
     <input type="file" id="file-input" accept=".epub">
     
-    <div class="control-group">
+    <!-- Focus Deck Tools -->
+    <div style="margin-bottom: 24px;">
       <span class="control-label">Arousal & Focus</span>
-      <button class="toggle-btn" id="btn-quiet" onclick="toggleQuietFocus()">Quiet Eye Focus</button>
-      <button class="toggle-btn" id="btn-pacing" onclick="togglePacingLine()">Optokinetic Pacer</button>
-      <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-        <span style="font-size: 11px; color: var(--muted)">WPM:</span>
-        <input type="range" id="pacing-wpm" min="200" max="700" value="350" step="25" onchange="updateWpm()" style="flex: 1; accent-color: var(--accent);">
+      <button class="toggle-btn" id="btn-quiet" onclick="toggleQuietFocus()">Quiet Eye Isolation</button>
+      <button class="toggle-btn" id="btn-pacing" onclick="togglePacingLine()">Optokinetic Tracking</button>
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 0 4px;">
+        <span style="font-size: 11px; color: var(--text-muted)">WPM:</span>
+        <input type="range" id="pacing-wpm" min="200" max="700" value="350" step="25" onchange="updateWpm()" style="flex: 1; accent-color: var(--text);">
       </div>
     </div>
 
-    <div class="control-group">
-      <span class="control-label">Cognitive Scaffolding</span>
-      <div style="font-size: 12px; margin-bottom: 4px;">Streak Metric: <span id="streak-count" style="color: var(--warning); font-weight: bold;">0</span> links</div>
-      <div id="constellation-canvas" style="min-height: 30px; background: #0f1015; border-radius: 4px; padding: 4px; display: flex; flex-wrap: wrap;"></div>
+    <!-- Dopamine Ledger Modules -->
+    <div style="margin-bottom: 24px;">
+      <span class="control-label">Cognitive Grid</span>
+      <div style="font-size: 12px; margin-bottom: 8px; color: var(--text-muted);">Streak Integrity: <span id="streak-count" style="color: var(--text); font-weight: 600;">0</span> packages</div>
+      <div id="constellation-canvas" style="min-height: 24px; display: flex; flex-wrap: wrap;"></div>
     </div>
 
-    <div style="font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: bold; text-transform: uppercase;">Chapters</div>
+    <!-- Free EPUB Repositories Links -->
+    <div style="margin-bottom: 24px;">
+      <span class="control-label">Open Source Catalogs</span>
+      <a href="https://standardebooks.org" target="_blank" class="library-link">Standard Ebooks →</a>
+      <a href="https://www.gutenberg.org" target="_blank" class="library-link">Project Gutenberg →</a>
+      <a href="https://archive.org" target="_blank" class="library-link">Internet Archive →</a>
+    </div>
+
+    <span class="control-label">Index Navigation</span>
     <div id="chapter-list" style="flex: 1; overflow-y: auto;"></div>
   </div>
 
   <div id="workspace">
     <div id="pacing-line"></div>
-    <div id="book-content" style="max-width: 680px; margin: 0 auto; padding-bottom: 200px;">
-      <h1 style="color: var(--accent); margin-top: 0;">Sovereign Neuro-Reader</h1>
-      <p>Load a clean, DRM-free EPUB file to unlock your high-yield learning space. Drag and drop any <strong>.epub</strong> file directly onto this window, or click the button on the left to begin.</p>
+    <div class="content-container" id="book-content">
+      
+      <!-- Premium App Documentation Hub Layout -->
+      <h1 style="font-size: 32px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 8px 0;">Workspace Architecture</h1>
+      <p style="color: var(--text-muted); font-size: 16px; margin: 0 0 40px 0;">Welcome to Aura Reader. This harness transforms reading from a passive process into active data extraction.</p>
+      
+      <div class="premium-card">
+        <h3>1. Seamless File Injection</h3>
+        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">Drag and drop any DRM-free <strong>.epub</strong> file directly into this screen window workspace, or click the primary action bar on the top left. The book splits into isolated chapter structures inside local storage memory instantly.</p>
+      </div>
+
+      <div class="premium-card">
+        <h3>2. Deep Neurobiology Optimizations</h3>
+        <p style="font-size: 14px; color: var(--text-muted); margin: 0 0 12px 0;">Toggle advanced cognitive tools designed around visual attention pathways:</p>
+        <ul style="font-size: 14px; color: var(--text-muted); padding-left: 20px; margin: 0;">
+          <li style="margin-bottom: 6px;"><strong>Quiet Eye Isolation:</strong> Mutes surrounding prose blocks, focusing neural tracking mechanisms explicitly onto a single, sharp target sentence line.</li>
+          <li><strong>Optokinetic Tracking:</strong> Generates a smooth horizontal guide pacing layout to stimulate sustained alertness metrics via consistent, fluid eye tracking speeds.</li>
+        </ul>
+      </div>
+
+      <div class="premium-card">
+        <h3>3. Constructing Prompt Packages</h3>
+        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">Highlight text anywhere in an active chapter block to call up the Context Bubble. Choose an operational modality to instantly construct structured system configurations (encapsulated within clean XML anchors) sent directly to your system clipboard for local or cloud LLM deployment.</p>
+      </div>
+      
     </div>
   </div>
 
+  <!-- Selection Action Utilities Menu -->
   <div id="action-bubble">
     <button class="harness-btn" onclick="executeHarnessAction('deconstruct')">Deconstruct</button>
     <button class="harness-btn" onclick="executeHarnessAction('mental-model')">Mental Model</button>
     <button class="harness-btn" onclick="executeHarnessAction('quiz')">Active Quiz</button>
   </div>
 
+  <!-- Rest Shield Module Frame -->
   <div id="reset-shield">
-    <h2 style="color: var(--accent); font-weight: 300; margin: 0;">Cognitive Reset Interval</h2>
-    <p style="color: var(--muted); max-width: 400px; font-size: 15px; margin: 10px 0 0 0;">Flushing cellular accumulation and resetting baseline attention mechanisms via structural respiration pacing.</p>
+    <h2 style="font-size: 24px; font-weight: 500; letter-spacing: -0.02em; margin: 0;">Cognitive Reset Interval</h2>
+    <p style="color: var(--text-muted); max-width: 360px; font-size: 14px; margin: 8px 0 0 0;">Synchronize your breathing patterns to flush neural fatigue frameworks.</p>
     <div id="nsdr-circle">Inhale</div>
-    <button class="harness-btn" onclick="terminateResetEarly()" style="border-color: var(--muted); color: var(--muted);">Skip Reset</button>
+    <button class="harness-btn" onclick="terminateResetEarly()" style="color: var(--text-muted); background: rgba(255,255,255,0.02); border: 1px solid var(--border)">Skip Break</button>
   </div>
 
   <div id="status-toast"></div>
@@ -308,23 +408,18 @@
     let pacingInterval = null;
     let currentWpm = 350;
     
-    // Cognitive load tracking variables
-    let totalWordsReadSession = 0;
     let wordsSinceLastReset = 0;
     const RESET_THRESHOLD_WORDS = 4000;
 
-    // --- Drag and Drop File Handlers ---
-    const dropTarget = document.getElementById('drop-target');
+    // --- Drag and Drop Logic ---
     const dropOverlay = document.getElementById('drop-overlay');
 
-    // Prevent default behaviors for drag events to allow custom file handling
     window.addEventListener('dragover', (e) => {
       e.preventDefault();
       dropOverlay.classList.add('drag-over');
     });
 
     window.addEventListener('dragleave', (e) => {
-      // Prevent child element transitions from early trigger removals
       if (e.relatedTarget === null) {
         dropOverlay.classList.remove('drag-over');
       }
@@ -338,17 +433,16 @@
       if (file && file.name.endsWith('.epub')) {
         processEpubFile(file);
       } else {
-        alert("Please drop a valid, DRM-free .epub file.");
+        alert("Please drop a valid out-of-copyright or DRM-free .epub book.");
       }
     });
 
-    // Handle manual file input selection
     document.getElementById('file-input').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) processEpubFile(file);
     });
 
-    // EPUB Core Extraction Engine
+    // EPUB Layout Core Extraction Processing
     function processEpubFile(file) {
       const reader = new FileReader();
       reader.onload = async (event) => {
@@ -370,7 +464,10 @@
             
             if (doc.body) {
               const headings = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6');
-              headings.forEach(h => h.style.color = 'var(--accent)');
+              headings.forEach(h => {
+                h.style.color = 'var(--text)';
+                h.style.letterSpacing = '-0.02em';
+              });
             }
             
             const bodyContent = doc.body ? doc.body.innerHTML : rawText;
@@ -389,17 +486,17 @@
           }
           
           if(currentBookData.chapters.length > 0) renderChapter(0);
-          showToast(`Successfully loaded: ${file.name}`);
+          showToast("Book loaded successfully");
         } catch (err) {
           console.error(err);
-          alert("Error unpacking EPUB archive container.");
+          alert("Error parsing EPUB structure.");
         }
       };
       reader.readAsArrayBuffer(file);
     }
 
     // Selection Tracking Mechanics
-    document.getElementById('workspace').addEventListener('mouseup', (e) => {
+    document.getElementById('workspace').addEventListener('mouseup', () => {
       const selection = window.getSelection();
       const selectedText = selection.toString().trim();
       const bubble = document.getElementById('action-bubble');
@@ -429,11 +526,10 @@
       if(items[index]) items[index].classList.add('active');
 
       const container = document.getElementById('book-content');
-      container.innerHTML = `<h2>${currentBookData.chapters[index].title}</h2>` + currentBookData.chapters[index].content;
+      container.innerHTML = `<h2 style="font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 32px;">${currentBookData.chapters[index].title}</h2>` + currentBookData.chapters[index].content;
       
       const wordCount = container.innerText.split(/\s+/).length;
       wordsSinceLastReset += wordCount;
-      totalWordsReadSession += wordCount;
 
       const workspace = document.getElementById('workspace');
       workspace.scrollTop = 0;
@@ -447,7 +543,7 @@
       }
     }
 
-    /* Feature Loop 1: Optokinetic Focus Layouts */
+    /* Focus Modality Features */
     function toggleQuietFocus() {
       isQuietFocus = !isQuietFocus;
       const btn = document.getElementById('btn-quiet');
@@ -542,21 +638,21 @@
       }, intervalMs);
     }
 
-    /* Feature Loop 2: Dopamine Validation Architecture */
+    /* Dopamine Reinforcement Loop Hooks */
     function executeHarnessAction(mode) {
       let systemPrompt = "";
       if (mode === 'deconstruct') {
-        systemPrompt = "Analyze this text. Detail core logical assertions, hidden structural assumptions, and counterintuitive metrics:\n\n";
+        systemPrompt = "Deconstruct the core architectural claims, implicit assumptions, and empirical points inside this text node:\n\n";
       } else if (mode === 'mental-model') {
-        systemPrompt = "Map the mechanics detailed below into an intuitive physical analogy or functional engineering mental model:\n\n";
+        systemPrompt = "Map this text block into an elegant, physical analog mechanism or systems engineering mental framework:\n\n";
       } else if (mode === 'quiz') {
-        systemPrompt = "Generate 3 rigorous conceptual active recall validation questions testing this text configuration. Keep answers hidden in down-toggled detail blocks:\n\n";
+        systemPrompt = "Produce 3 advanced conceptual active recall testing prompts built solely from this reading profile. Keep answers nested inside closed dropdown containers:\n\n";
       }
 
       const fullPayload = `${systemPrompt}<reading_context>\n${activeSelection}\n</reading_context>`;
 
       navigator.clipboard.writeText(fullPayload).then(() => {
-        showToast("✓ Context Harness payload generated and copied.");
+        showToast("Harness context copied to clipboard");
         document.getElementById('action-bubble').style.display = 'none';
         window.getSelection().removeAllRanges();
         
@@ -576,7 +672,7 @@
       canvas.appendChild(node);
     }
 
-    /* Feature Loop 3: Progressive Fatigue Recovery Protocols */
+    /* NSDR Integration */
     let nsdrTimer = null;
     function triggerCognitiveResetInterval() {
       if (isPacing) togglePacingLine();
@@ -591,15 +687,13 @@
         let phase = elapsedSeconds % 12;
         if (phase < 4) {
           circle.innerText = "Inhale";
-          circle.style.transform = `scale(${1 + (phase * 0.1)})`;
-          circle.style.boxShadow = "0 0 30px rgba(187, 154, 247, 0.4)";
+          circle.style.transform = `scale(${1 + (phase * 0.08)})`;
         } else if (phase < 6) {
           circle.innerText = "Hold";
         } else {
           let exhalePhase = phase - 6;
           circle.innerText = "Exhale";
-          circle.style.transform = `scale(${1.4 - (exhalePhase * 0.06)})`;
-          circle.style.boxShadow = "0 0 10px rgba(187, 154, 247, 0.1)";
+          circle.style.transform = `scale(${1.32 - (exhalePhase * 0.05)})`;
         }
         elapsedSeconds++;
         
@@ -615,14 +709,14 @@
     function terminateResetEarly() {
       clearInterval(nsdrTimer);
       document.getElementById('reset-shield').style.display = 'none';
-      showToast("Cognitive state reset. Ready for next block.");
+      showToast("Cognitive sync complete");
     }
 
     function showToast(msg) {
       const toast = document.getElementById('status-toast');
       toast.innerText = msg;
       toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 3500);
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
   </script>
 </body>
