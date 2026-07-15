@@ -23,6 +23,29 @@
       display: flex;
       height: 100vh;
       overflow: hidden;
+      position: relative;
+    }
+    
+    /* Drag-and-Drop Global Target Visual */
+    #drop-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(22, 22, 34, 0.95);
+      border: 4px dashed var(--accent);
+      box-sizing: border-box;
+      z-index: 15000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      pointer-events: none; /* Let drag events fall through to body */
+      transition: all 0.3s ease;
+    }
+    #drop-overlay.drag-over {
+      display: flex;
     }
     
     /* Workspace Panels */
@@ -223,13 +246,17 @@
     }
   </style>
 </head>
-<body>
+<body id="drop-target">
+
+  <div id="drop-overlay">
+    <h1 style="color: var(--accent); pointer-events: none;">Drop EPUB Anywhere</h1>
+    <p style="color: var(--muted); pointer-events: none;">Release to load files directly into memory</p>
+  </div>
 
   <div id="sidebar">
     <label for="file-input" class="upload-label">Load Local EPUB</label>
     <input type="file" id="file-input" accept=".epub">
     
-    <!-- Neurobiology Control Deck -->
     <div class="control-group">
       <span class="control-label">Arousal & Focus</span>
       <button class="toggle-btn" id="btn-quiet" onclick="toggleQuietFocus()">Quiet Eye Focus</button>
@@ -240,7 +267,6 @@
       </div>
     </div>
 
-    <!-- Dopamine Ledger Tracker -->
     <div class="control-group">
       <span class="control-label">Cognitive Scaffolding</span>
       <div style="font-size: 12px; margin-bottom: 4px;">Streak Metric: <span id="streak-count" style="color: var(--warning); font-weight: bold;">0</span> links</div>
@@ -255,18 +281,16 @@
     <div id="pacing-line"></div>
     <div id="book-content" style="max-width: 680px; margin: 0 auto; padding-bottom: 200px;">
       <h1 style="color: var(--accent); margin-top: 0;">Sovereign Neuro-Reader</h1>
-      <p>Load a clean, DRM-free EPUB file to unlock your high-yield learning space. All processing, parsing, and context mapping strategies execute strictly layout-side inside your browser sandbox.</p>
+      <p>Load a clean, DRM-free EPUB file to unlock your high-yield learning space. Drag and drop any <strong>.epub</strong> file directly onto this window, or click the button on the left to begin.</p>
     </div>
   </div>
 
-  <!-- Floating Context Engine Options -->
   <div id="action-bubble">
     <button class="harness-btn" onclick="executeHarnessAction('deconstruct')">Deconstruct</button>
     <button class="harness-btn" onclick="executeHarnessAction('mental-model')">Mental Model</button>
     <button class="harness-btn" onclick="executeHarnessAction('quiz')">Active Quiz</button>
   </div>
 
-  <!-- Non-Sleep Deep Rest System Overlay -->
   <div id="reset-shield">
     <h2 style="color: var(--accent); font-weight: 300; margin: 0;">Cognitive Reset Interval</h2>
     <p style="color: var(--muted); max-width: 400px; font-size: 15px; margin: 10px 0 0 0;">Flushing cellular accumulation and resetting baseline attention mechanisms via structural respiration pacing.</p>
@@ -287,7 +311,92 @@
     // Cognitive load tracking variables
     let totalWordsReadSession = 0;
     let wordsSinceLastReset = 0;
-    const RESET_THRESHOLD_WORDS = 4000; // Trigger NSDR break roughly every 4000 words read
+    const RESET_THRESHOLD_WORDS = 4000;
+
+    // --- Drag and Drop File Handlers ---
+    const dropTarget = document.getElementById('drop-target');
+    const dropOverlay = document.getElementById('drop-overlay');
+
+    // Prevent default behaviors for drag events to allow custom file handling
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropOverlay.classList.add('drag-over');
+    });
+
+    window.addEventListener('dragleave', (e) => {
+      // Prevent child element transitions from early trigger removals
+      if (e.relatedTarget === null) {
+        dropOverlay.classList.remove('drag-over');
+      }
+    });
+
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropOverlay.classList.remove('drag-over');
+      
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith('.epub')) {
+        processEpubFile(file);
+      } else {
+        alert("Please drop a valid, DRM-free .epub file.");
+      }
+    });
+
+    // Handle manual file input selection
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) processEpubFile(file);
+    });
+
+    // EPUB Core Extraction Engine
+    function processEpubFile(file) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const zip = await JSZip.loadAsync(event.target.result);
+          currentBookData.chapters = [];
+          
+          const filePaths = Object.keys(zip.files).filter(path => path.endsWith('.html') || path.endsWith('.xhtml'));
+          filePaths.sort();
+
+          const listContainer = document.getElementById('chapter-list');
+          listContainer.innerHTML = "";
+
+          let chapterIdx = 0;
+          for (const path of filePaths) {
+            const rawText = await zip.file(path).async("text");
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(rawText, "text/html");
+            
+            if (doc.body) {
+              const headings = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6');
+              headings.forEach(h => h.style.color = 'var(--accent)');
+            }
+            
+            const bodyContent = doc.body ? doc.body.innerHTML : rawText;
+            const title = doc.querySelector('title')?.innerText || `Section ${chapterIdx + 1}`;
+
+            currentBookData.chapters.push({ title, content: bodyContent });
+
+            const item = document.createElement('div');
+            item.className = 'chapter-nav-item';
+            item.innerText = title;
+            item.dataset.index = chapterIdx;
+            item.onclick = () => renderChapter(parseInt(item.dataset.index));
+            listContainer.appendChild(item);
+            
+            chapterIdx++;
+          }
+          
+          if(currentBookData.chapters.length > 0) renderChapter(0);
+          showToast(`Successfully loaded: ${file.name}`);
+        } catch (err) {
+          console.error(err);
+          alert("Error unpacking EPUB archive container.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
 
     // Selection Tracking Mechanics
     document.getElementById('workspace').addEventListener('mouseup', (e) => {
@@ -309,64 +418,9 @@
       }
     });
 
-    // Handle focus target highlighting on scroll or mouse clicks
     document.getElementById('workspace').addEventListener('scroll', () => {
       if (!isQuietFocus) return;
       evaluateActiveFocusTarget();
-    });
-
-    // EPUB Package Processing Pipeline
-    document.getElementById('file-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const zip = await JSZip.loadAsync(event.target.result);
-          currentBookData.chapters = [];
-          
-          const filePaths = Object.keys(zip.files).filter(path => path.endsWith('.html') || path.endsWith('.xhtml'));
-          filePaths.sort();
-
-          const listContainer = document.getElementById('chapter-list');
-          listContainer.innerHTML = "";
-
-          let chapterIdx = 0;
-          for (const path of filePaths) {
-            const rawText = await zip.file(path).async("text");
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(rawText, "text/html");
-            
-            // Unroll structural text contents safely
-            if (doc.body) {
-              // Convert clean semantic hierarchy elements for granular control loops
-              const headings = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6');
-              headings.forEach(h => h.style.color = 'var(--accent)');
-            }
-            
-            const bodyContent = doc.body ? doc.body.innerHTML : rawText;
-            const title = doc.querySelector('title')?.innerText || `Section ${chapterIdx + 1}`;
-
-            currentBookData.chapters.push({ title, content: bodyContent });
-
-            const item = document.createElement('div');
-            item.className = 'chapter-nav-item';
-            item.innerText = title;
-            item.dataset.index = chapterIdx;
-            item.onclick = () => renderChapter(parseInt(item.dataset.index));
-            listContainer.appendChild(item);
-            
-            chapterIdx++;
-          }
-          
-          if(currentBookData.chapters.length > 0) renderChapter(0);
-        } catch (err) {
-          console.error(err);
-          alert("Error unpacking EPUB archive container.");
-        }
-      };
-      reader.readAsArrayBuffer(file);
     });
 
     function renderChapter(index) {
@@ -377,7 +431,6 @@
       const container = document.getElementById('book-content');
       container.innerHTML = `<h2>${currentBookData.chapters[index].title}</h2>` + currentBookData.chapters[index].content;
       
-      // Calculate chapter length to track cognitive load intervals
       const wordCount = container.innerText.split(/\s+/).length;
       wordsSinceLastReset += wordCount;
       totalWordsReadSession += wordCount;
@@ -389,7 +442,6 @@
         setTimeout(evaluateActiveFocusTarget, 50);
       }
       
-      // Evaluate if the cognitive burden threshold requires initiating an NSDR interval
       if (wordsSinceLastReset >= RESET_THRESHOLD_WORDS) {
         setTimeout(triggerCognitiveResetInterval, 800);
       }
@@ -417,7 +469,7 @@
       const workspace = document.getElementById('workspace');
       const elements = workspace.querySelectorAll('p');
       const workspaceBounds = workspace.getBoundingClientRect();
-      const centerLine = workspaceBounds.top + (workspaceBounds.height / 3); // Position accent slightly above midpoint
+      const centerLine = workspaceBounds.top + (workspaceBounds.height / 3);
 
       let closestElement = null;
       let minDistance = Infinity;
@@ -469,12 +521,10 @@
       const workspace = document.getElementById('workspace');
       const line = document.getElementById('pacing-line');
       
-      // Approximate vertical advance mapping: ~35 pixels per line of text
-      // 350 WPM at an average of 12 words per line translates to ~30 lines per minute
       const linesPerMinute = currentWpm / 12;
       const pixelsPerMinute = linesPerMinute * 38;
       const pixelsPerSecond = pixelsPerMinute / 60;
-      const intervalMs = 40; // ~25 updates per second for fluid tracking profiles
+      const intervalMs = 40;
       const pixelsPerTick = pixelsPerSecond * (intervalMs / 1000);
 
       let currentTop = parseFloat(line.style.top);
@@ -483,7 +533,6 @@
         currentTop += pixelsPerTick;
         line.style.top = `${currentTop}px`;
 
-        // Automatically auto-scroll workspace viewpoint to match pacer location parameters
         const bounds = line.getBoundingClientRect();
         const workspaceBounds = workspace.getBoundingClientRect();
         
@@ -511,19 +560,16 @@
         document.getElementById('action-bubble').style.display = 'none';
         window.getSelection().removeAllRanges();
         
-        // Reward cycle reinforcement loop
         registerDopamineRewardTick();
       });
     }
 
     function registerDopamineRewardTick() {
-      // Advance visible tracking metric metrics
       const countEl = document.getElementById('streak-count');
       let count = parseInt(countEl.innerText);
       count++;
       countEl.innerText = count;
 
-      // Append visual feedback anchor element to side-dock module layout
       const canvas = document.getElementById('constellation-canvas');
       const node = document.createElement('div');
       node.className = 'constellation-node';
@@ -533,7 +579,6 @@
     /* Feature Loop 3: Progressive Fatigue Recovery Protocols */
     let nsdrTimer = null;
     function triggerCognitiveResetInterval() {
-      // Clear movement trackers to prevent disruption states
       if (isPacing) togglePacingLine();
       
       wordsSinceLastReset = 0;
@@ -542,7 +587,6 @@
       shield.style.display = 'flex';
 
       let elapsedSeconds = 0;
-      // Cyclical timing array mapping breathing parameters: Inhale 4s, Hold 2s, Exhale 6s
       const runRespirationCycle = () => {
         let phase = elapsedSeconds % 12;
         if (phase < 4) {
@@ -559,7 +603,6 @@
         }
         elapsedSeconds++;
         
-        // Auto-terminate deep rest block after 90 seconds (7.5 cycles)
         if (elapsedSeconds >= 90) {
           terminateResetEarly();
         }
