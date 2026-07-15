@@ -7,13 +7,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
-            --bg-primary: #fcfcfd;
-            --bg-secondary: #f4f5f6;
+            --bg-primary: #f5f5f7;       /* Soft system backdrop */
+            --bg-secondary: #ffffff;     /* Distinct structural panels */
             --text-primary: #1c1c1e;
             --text-secondary: #6e6e73;
             --accent: #0071e3;
-            --border: #e5e5ea;
-            --card-bg: #ffffff;
+            --border: #d2d2d7;           /* More visible high-contrast borders */
+            --card-bg: #f5f5f7;
+            --reader-bg: #ffffff;       /* Pure white strictly for the reading canvas */
             --highlight: rgba(0, 113, 227, 0.12);
             --pacing-line: #0071e3;
             --bubble-bg: #1c1c1e;
@@ -35,24 +36,28 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            padding: 8px; /* Visual frame around global application window */
+            gap: 8px;
         }
 
-        /* Responsive Navigation Architecture */
+        /* Visible Panels and Boundaries */
         #sidebar {
             width: 320px;
             min-width: 320px;
             background-color: var(--bg-secondary);
-            border-right: 1px solid var(--border);
+            border: 1px solid var(--border);
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
             height: 100%;
             z-index: 10;
-            transition: transform 0.3s ease;
+            overflow: hidden;
         }
 
         .sidebar-header {
             padding: 24px;
             border-bottom: 1px solid var(--border);
+            background-color: var(--bg-secondary);
             flex-shrink: 0;
         }
 
@@ -65,11 +70,12 @@
             gap: 8px;
         }
 
-        /* Improved Navigation Usability - Uncompressed Scroller Container */
+        /* Navigation Scroller Container - Uncompressed */
         .navigation-view {
             flex-grow: 1;
             overflow-y: auto;
-            padding: 20px 16px 40px 16px; /* Enhanced bottom padding prevents compression near borders */
+            padding: 20px 16px 40px 16px;
+            background-color: var(--bg-secondary);
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
         }
@@ -78,7 +84,7 @@
             width: 6px;
         }
         .navigation-view::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: rgba(0, 0, 0, 0.15);
             border-radius: 10px;
         }
 
@@ -95,11 +101,11 @@
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 4px; /* Distinct visual micro-spacing */
+            gap: 4px;
         }
 
         .chapter-item {
-            padding: 12px 14px; /* Generous padding ensures scroller is open and tap targets are accessible */
+            padding: 12px 14px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 0.9rem;
@@ -108,28 +114,29 @@
             transition: all 0.2s ease;
             white-space: nowrap;
             overflow: hidden;
-            text-ellipsis: ellipsis;
+            text-overflow: ellipsis;
             display: block;
+            border: 1px solid transparent;
         }
 
         .chapter-item:hover {
-            background-color: rgba(0, 0, 0, 0.04);
+            background-color: var(--bg-primary);
+            border-color: var(--border);
         }
 
         .chapter-item.active {
             background-color: var(--card-bg);
             color: var(--accent);
             font-weight: 600;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            border-left: 3px solid var(--accent);
-            padding-left: 11px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
         }
 
-        /* Controls Architecture */
+        /* Controls Architecture Dock */
         .controls-panel {
             padding: 20px 24px;
             border-top: 1px solid var(--border);
-            background-color: var(--bg-secondary);
+            background-color: var(--bg-primary);
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -162,7 +169,7 @@
         }
 
         .toggle-btn {
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
             padding: 10px;
             border-radius: 8px;
@@ -181,14 +188,17 @@
             border-color: var(--accent);
         }
 
-        /* Workspace Core Viewport */
+        /* Workspace Viewport Panel Boundary */
         #workspace {
             flex-grow: 1;
             height: 100%;
             display: flex;
             flex-direction: column;
             position: relative;
-            background-color: var(--bg-primary);
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         #drop-zone {
@@ -197,12 +207,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(252, 252, 253, 0.95);
+            background: rgba(255, 255, 255, 0.96);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            border: 2px dashed var(--border);
             z-index: 100;
             pointer-events: none;
             opacity: 0;
@@ -214,15 +223,15 @@
         }
 
         .drop-card {
-            background: var(--card-bg);
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border);
             padding: 40px;
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
             text-align: center;
             max-width: 400px;
         }
 
-        /* Modern Scholarly Typography Layout */
+        /* Typographic Reading Desk Panel Boundary */
         .reader-container {
             flex-grow: 1;
             overflow-y: auto;
@@ -230,6 +239,7 @@
             display: flex;
             justify-content: center;
             position: relative;
+            background-color: var(--reader-bg); /* Insulated white page layer */
         }
 
         .chapter-viewport {
@@ -248,7 +258,7 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Quiet Eye Isolation State */
+        /* Focus Processing States */
         .quiet-eye-active p {
             opacity: 0.15;
         }
@@ -257,7 +267,6 @@
             opacity: 1;
         }
 
-        /* Optokinetic Pacing Overlay Component */
         #pacing-line {
             position: absolute;
             left: 0;
@@ -270,7 +279,7 @@
             z-index: 5;
         }
 
-        /* Tactical Selection Context Bubble UI Component */
+        /* Selection Context Bubble Menu Overlay */
         .context-bubble {
             position: absolute;
             background-color: var(--bubble-bg);
@@ -331,7 +340,7 @@
             opacity: 1;
         }
 
-        /* Native Landing/Help States */
+        /* Documentation Component Layout styling */
         .help-view {
             max-width: 680px;
             width: 100%;
@@ -354,29 +363,16 @@
             text-align: left;
             font-size: 0.9rem;
         }
-        .matrix-table th { background: var(--bg-secondary); font-weight: 600; }
-
-        @media (max-width: 768px) {
-            #sidebar {
-                position: absolute;
-                left: 0;
-                transform: translateX(-100%);
-            }
-            #sidebar.open {
-                transform: translateX(0);
-            }
-        }
+        .matrix-table th { background: var(--bg-primary); font-weight: 600; }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar Architecture with Expanded Scroller Constraints -->
     <aside id="sidebar">
         <div class="sidebar-header">
             <h1><span>🌟</span> Aura Reader</h1>
         </div>
         
-        <!-- Target Navigation Area: Uncompressed Navigation View Layout -->
         <div class="navigation-view" id="navigation-container">
             <div class="nav-section-title">Workspace Utilities</div>
             <ul class="chapter-list">
@@ -385,13 +381,10 @@
             
             <div id="dynamic-chapters-wrapper" style="display:none;">
                 <div class="nav-section-title" id="book-title-label">Manifest Document</div>
-                <ul class="chapter-list" id="epub-chapters-list">
-                    <!-- Ingested components attach seamlessly here -->
-                </ul>
+                <ul class="chapter-list" id="epub-chapters-list"></ul>
             </div>
         </div>
 
-        <!-- System Controls Grid -->
         <div class="controls-panel">
             <div class="control-group">
                 <label>Focus Processing Engine</label>
@@ -412,7 +405,6 @@
         </div>
     </aside>
 
-    <!-- Workspace Processing Core -->
     <main id="workspace">
         <div id="drop-zone">
             <div class="drop-card">
@@ -424,7 +416,6 @@
         <div class="reader-container" id="reader-scroll-viewport" onscroll="handleViewportScroll()">
             <div id="pacing-line"></div>
             <div class="chapter-viewport" id="render-target">
-                <!-- Landing System Documentation -->
                 <div class="help-view">
                     <h2>Welcome to Your Cognitive Desk 🚀</h2>
                     <p>Aura Reader is a zero-dependency, single-file framework designed to maximize deep focus and transform long-form text ingestion into a high-octane data extraction sport.</p>
@@ -458,31 +449,27 @@
                     </table>
 
                     <h3>🔮 Quickstart Instructions</h3>
-                    <p><strong>1. Load Text Structures:</strong> Simply drag and drop any unencrypted <code>.epub</code> book file directly anywhere onto this layout window. The parsing engine maps chapters instantaneously inside the sidebar index panel.</p>
-                    <p><strong>2. Trigger Prompt Packages:</strong> Highlight text strings anywhere inside an active text segment. A contextual prompt harness array will materialize immediately above your cursor. Click an operational asset profile to instantly package the selection into structured prompt contexts copied directly to your clipboard.</p>
+                    <p><strong>1. Load Text Structures:</strong> Drag and drop any unencrypted <code>.epub</code> file directly anywhere onto this layout window. The parsing engine maps chapters instantaneously inside the sidebar navigation workspace.</p>
+                    <p><strong>2. Constructing Prompt Packages:</strong> Highlight text strings anywhere inside an active chapter block to call up the Context Bubble. Choose an operational modality to instantly construct structured system configurations (encapsulated within clean XML anchors) sent directly to your system clipboard.</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Context Selection Action Element Overlay -->
     <div class="context-bubble" id="harness-bubble">
         <button class="bubble-action" onclick="executeContextHarness('extract')">⚡ Data Extract</button>
         <button class="bubble-action" onclick="executeContextHarness('explain')">🧠 Deconstruct</button>
         <button class="bubble-action" onclick="executeContextHarness('refactor')">🛠️ Refactor</button>
     </div>
 
-    <!-- Notification Toast component -->
     <div class="bubble-toast" id="toast-notification">Context package anchored directly to clipboard!</div>
 
     <script>
-        // System State
         let currentBookData = { chapters: [] };
         let activePacerInterval = null;
         let pacerState = { active: false, paragraphIndex: 0, sentenceIndex: 0, sentences: [] };
         let selectedPromptText = "";
 
-        // UI Initialization Hooks
         document.addEventListener('DOMContentLoaded', () => {
             const workspaceContainer = document.body;
             
@@ -504,40 +491,49 @@
                 }
             });
 
-            // Initialize Context Bubble listeners
             document.addEventListener('selectionchange', handleTextSelectionInspection);
         });
 
         function showHelpDocumentation() {
-            location.reload(); // Quick reset back to baseline view configuration
+            const viewportTarget = document.getElementById('render-target');
+            viewportTarget.className = "chapter-viewport";
+            viewportTarget.innerHTML = `
+                <div class="help-view">
+                    <h2>Welcome to Your Cognitive Desk 🚀</h2>
+                    <p>Aura Reader is a zero-dependency, single-file framework designed to maximize deep focus and transform long-form text ingestion into a high-octane data extraction sport.</p>
+                    <h3>🛠️ The Feature Alignment Matrix</h3>
+                    <table class="matrix-table">
+                        <thead><tr><th>Feature</th><th>The Biology Behind It 🧬</th><th>How it Feels ⚡</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Quiet Eye Isolation</strong></td><td>Mutes adjacent text blocks, keeping focus localized on the target block.</td><td>Like a spotlight shifting down the page. 🔦</td></tr>
+                            <tr><td><strong>Optokinetic Tracking</strong></td><td>A steady tracking rule pacing your reading layout speed.</td><td>Riding an acceleration engine through text layers. 🚄</td></tr>
+                            <tr><td><strong>Context Harness Bubble</strong></td><td>Extracts text directly into clean, structured XML-anchored LLM prompt templates.</td><td>Pure context engineering direct to clipboard. 🪄</td></tr>
+                        </tbody>
+                    </table>
+                    <h3>🔮 Quickstart Instructions</h3>
+                    <p><strong>1. Load Text Structures:</strong> Drag and drop any unencrypted <code>.epub</code> file directly anywhere onto this layout window. The parsing engine maps chapters instantaneously inside the sidebar navigation workspace.</p>
+                    <p><strong>2. Constructing Prompt Packages:</strong> Highlight text strings anywhere inside an active chapter block to call up the Context Bubble. Choose an operational modality to instantly construct structured system configurations (encapsulated within clean XML anchors) sent directly to your system clipboard.</p>
+                </div>`;
+            document.querySelectorAll('.chapter-item').forEach(el => el.classList.remove('active'));
+            document.querySelector('.chapter-list opacity').parentElement.firstElementChild.classList.add('active');
+            haltPacingLoop();
         }
 
-        // Core EPUB Parsing Engine Configuration
         async function ingestEpubData(fileData) {
             try {
                 const loadedZip = await JSZip.loadAsync(fileData);
                 const manifestFileKey = Object.keys(loadedZip.files).find(key => key.endsWith('.opf'));
-                
-                if (!manifestFileKey) {
-                    alert('Invalid package system structure encountered: OPF content not located.');
-                    return;
-                }
+                if (!manifestFileKey) return alert('Invalid structure: OPF content not located.');
 
                 const rawOpfText = await loadedZip.files[manifestFileKey].async('string');
                 const parsingDocument = new DOMParser().parseFromString(rawOpfText, 'text/xml');
-                
-                // Track metadata identifiers
                 const titleNode = parsingDocument.querySelector('title');
                 const configuredTitle = titleNode ? titleNode.textContent : "Ingested Workspace Masterpiece";
                 
-                // Track internal asset mappings
                 const manifestedItems = Array.from(parsingDocument.querySelectorAll('item'));
                 const spineItemRefs = Array.from(parsingDocument.querySelectorAll('itemref'));
-                
                 const itemLookupMap = {};
-                manifestedItems.forEach(item => {
-                    itemLookupMap[item.getAttribute('id')] = item.getAttribute('href');
-                });
+                manifestedItems.forEach(item => itemLookupMap[item.getAttribute('id')] = item.getAttribute('href'));
 
                 const rootPathFolder = manifestFileKey.substring(0, manifestFileKey.lastIndexOf('/') + 1);
                 currentBookData.chapters = [];
@@ -553,22 +549,16 @@
                             const elementBodyParser = new DOMParser().parseFromString(processingHtmlText, 'text/html');
                             const completeTextBody = elementBodyParser.body.innerHTML;
                             
-                            // Capture readable header layout strings
                             let displayLabel = elementBodyParser.body.querySelector('h1, h2, h3')?.textContent || `Chapter ${currentBookData.chapters.length + 1}`;
                             if(displayLabel.length > 32) displayLabel = displayLabel.substring(0, 30) + '...';
                             
-                            currentBookData.chapters.push({
-                                title: displayLabel.trim(),
-                                content: completeTextBody
-                            });
+                            currentBookData.chapters.push({ title: displayLabel.trim(), content: completeTextBody });
                         }
                     }
                 }
-
                 renderNavigationSpine(configuredTitle);
-            } catch (processingException) {
-                console.error(processingException);
-                alert('Parsing failed to map resources inside this standard EPUB file structure.');
+            } catch (err) {
+                alert('Parsing failed to map resources inside this standard EPUB file.');
             }
         }
 
@@ -584,58 +574,36 @@
                 itemNode.onclick = () => launchActiveChapterView(uniqueIndex, itemNode);
                 collectionTarget.appendChild(itemNode);
             });
-
             document.getElementById('dynamic-chapters-wrapper').style.display = 'block';
-            
-            // Auto-advance directly into initial chapter layer mapping
-            if (currentBookData.chapters.length > 0) {
-                const firstElementNode = collectionTarget.firstElementChild;
-                launchActiveChapterView(0, firstElementNode);
-            }
+            if (currentBookData.chapters.length > 0) launchActiveChapterView(0, collectionTarget.firstElementChild);
         }
 
         function launchActiveChapterView(index, DOMNodeRef) {
-            // Clean dynamic structures
             document.querySelectorAll('.chapter-item').forEach(el => el.classList.remove('active'));
             DOMNodeRef.classList.add('active');
-            
-            // Re-allocate active textual payloads
             const viewportTarget = document.getElementById('render-target');
             viewportTarget.className = "chapter-viewport";
             viewportTarget.innerHTML = currentBookData.chapters[index].content;
             
-            // Enforce layout tracking wrappers down down clean semantic paragraphs
             const paragraphs = viewportTarget.querySelectorAll('p');
             if (paragraphs.length === 0) {
-                // If it's a legacy flat text structure wrap elements cleanly
-                const textBackupContent = viewportTarget.innerHTML;
-                viewportTarget.innerHTML = `<p>${textBackupContent.split('<br>').join('</p><p>')}</p>`;
+                viewportTarget.innerHTML = `<p>${viewportTarget.innerHTML.split('<br>').join('</p><p>')}</p>`;
             }
-
-            // Flush out active running timers on context shifts
             haltPacingLoop();
             document.getElementById('reader-scroll-viewport').scrollTop = 0;
         }
 
-        // Tactical Context Bubble Architecture Hook
         function handleTextSelectionInspection() {
             const currentSelection = window.getSelection();
             const boundaryText = currentSelection.toString().trim();
-
-            if (!boundaryText || boundaryText.length === 0) {
-                hideHarnessBubble();
-                return;
-            }
+            if (!boundaryText) return hideHarnessBubble();
 
             selectedPromptText = boundaryText;
-            
             const selectionRange = currentSelection.getRangeAt(0);
             const clientBoundaries = selectionRange.getBoundingClientRect();
-            
             const viewportOffset = document.getElementById('reader-scroll-viewport').getBoundingClientRect();
             const elementBubble = document.getElementById('harness-bubble');
             
-            // Position overlay exactly contextually over selection area bounds
             elementBubble.style.top = `${window.scrollY + clientBoundaries.top - viewportOffset.top - 45 + document.getElementById('reader-scroll-viewport').scrollTop}px`;
             elementBubble.style.left = `${window.scrollX + clientBoundaries.left + (clientBoundaries.width / 2) - 120}px`;
             elementBubble.classList.add('visible');
@@ -645,67 +613,38 @@
             document.getElementById('harness-bubble').classList.remove('visible');
         }
 
-        // Prompt Packing Module
         function executeContextHarness(strategyModality) {
             let systematicPromptPayload = "";
             const dynamicTimestamp = new Date().toISOString();
 
             switch(strategyModality) {
                 case 'extract':
-                    systematicPromptPayload = `<prompt_package type="data_extraction" generated="${dynamicTimestamp}">
-<system_directive>
-You are an advanced cognitive extraction mechanism. Isolate all essential concepts, core assumptions, insights, and actionable metrics present in the source material. Organize data cleanly into categorical markdown nodes. Avoid filler and editorial preamble.
-</system_directive>
-<context_source>
-${selectedPromptText}
-</context_source>
-</prompt_package>`;
+                    systematicPromptPayload = `<prompt_package type="data_extraction" generated="${dynamicTimestamp}">\n<system_directive>\nYou are an advanced cognitive extraction mechanism. Isolate all essential concepts, core assumptions, insights, and actionable metrics present in the source material. Organize data cleanly into categorical markdown nodes. Avoid filler and editorial preamble.\n</system_directive>\n<context_source>\n${selectedPromptText}\n</context_source>\n</prompt_package>`;
                     break;
                 case 'explain':
-                    systematicPromptPayload = `<prompt_package type="deconstruct_analysis" generated="${dynamicTimestamp}">
-<system_directive>
-Deconstruct the following architectural arguments or conceptual statements. Trace any underlying root assertions, highlight downstream logical implications, and synthesize an accessible first-principles summary.
-</system_directive>
-<context_source>
-${selectedPromptText}
-</context_source>
-</prompt_package>`;
+                    systematicPromptPayload = `<prompt_package type="deconstruct_analysis" generated="${dynamicTimestamp}">\n<system_directive>\nDeconstruct the following architectural arguments or conceptual statements. Trace any underlying root assertions, highlight downstream logical implications, and synthesize an accessible first-principles summary.\n</system_directive>\n<context_source>\n${selectedPromptText}\n</context_source>\n</prompt_package>`;
                     break;
                 case 'refactor':
-                    systematicPromptPayload = `<prompt_package type="conceptual_refactor" generated="${dynamicTimestamp}">
-<system_directive>
-Re-engineer the core thesis or logic structures present in this text. Identify logical optimization points, structural fragmentation, or flaws, and draft a clean, alternative synthesis layout framework.
-</system_directive>
-<context_source>
-${selectedPromptText}
-</context_source>
-</prompt_package>`;
+                    systematicPromptPayload = `<prompt_package type="conceptual_refactor" generated="${dynamicTimestamp}">\n<system_directive>\nRe-engineer the core thesis or logic structures present in this text. Identify logical optimization points, structural fragmentation, or flaws, and draft a clean, alternative synthesis layout framework.\n</system_directive>\n<context_source>\n${selectedPromptText}\n</context_source>\n</prompt_package>`;
                     break;
             }
 
-            // Secure programmatic transfer to operating clipboard safely
             navigator.clipboard.writeText(systematicPromptPayload).then(() => {
                 showToastNotification();
                 window.getSelection().removeAllRanges();
                 hideHarnessBubble();
-            }).catch(err => {
-                console.error('Insecure clipboard interaction failed: ', err);
             });
         }
 
         function showToastNotification() {
             const toast = document.getElementById('toast-notification');
             toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // Focus Processing Neurobiology Architecture Engines
         function toggleQuietEye() {
             const viewport = document.getElementById('render-target');
             const toggleButton = document.getElementById('toggle-quiet-eye');
-            
             viewport.classList.toggle('quiet-eye-active');
             
             if(viewport.classList.contains('quiet-eye-active')) {
@@ -715,61 +654,42 @@ ${selectedPromptText}
             } else {
                 toggleButton.classList.remove('active');
                 toggleButton.querySelector('span').textContent = "Off";
-                // Restore tracking values clear
                 viewport.querySelectorAll('p').forEach(p => p.classList.remove('focused-sentence-para'));
             }
         }
 
         function handleViewportScroll() {
-            if (document.getElementById('render-target').classList.contains('quiet-eye-active')) {
-                evaluateQuietEyeState();
-            }
+            if (document.getElementById('render-target').classList.contains('quiet-eye-active')) evaluateQuietEyeState();
         }
 
         function evaluateQuietEyeState() {
             const paragraphBlocks = document.getElementById('render-target').querySelectorAll('p');
             const viewportBoundary = document.getElementById('reader-scroll-viewport').getBoundingClientRect();
             const viewportCenterY = viewportBoundary.top + (viewportBoundary.height / 2);
-
-            let closestParagraph = null;
-            let minimalDistance = Infinity;
+            let closestParagraph = null; let minimalDistance = Infinity;
 
             paragraphBlocks.forEach(paraElement => {
                 const parameters = paraElement.getBoundingClientRect();
                 const elementCenterY = parameters.top + (parameters.height / 2);
                 const absoluteDistance = Math.abs(viewportCenterY - elementCenterY);
-                
                 paraElement.classList.remove('focused-sentence-para');
-                
-                if (absoluteDistance < minimalDistance) {
-                    minimalDistance = absoluteDistance;
-                    closestParagraph = paraElement;
-                }
+                if (absoluteDistance < minimalDistance) { minimalDistance = absoluteDistance; closestParagraph = paraElement; }
             });
-
-            if (closestParagraph) {
-                closestParagraph.classList.add('focused-sentence-para');
-            }
+            if (closestParagraph) closestParagraph.classList.add('focused-sentence-para');
         }
 
-        // Optokinetic Pacing Pipeline Setup
         function updatePacingOutput(value) {
             document.getElementById('speed-indicator').textContent = `${value} WPM`;
-            if (pacerState.active) {
-                haltPacingLoop();
-                initiatePacingLoop();
-            }
+            if (pacerState.active) { haltPacingLoop(); initiatePacingLoop(); }
         }
 
         function togglePacingEngine() {
             const pacingToggleBtn = document.getElementById('toggle-pacer');
             pacerState.active = !pacerState.active;
-
             if (pacerState.active) {
                 pacingToggleBtn.classList.add('active');
                 pacingToggleBtn.querySelector('span').textContent = "On";
-                preparePacingSentences();
-                initiatePacingLoop();
+                preparePacingSentences(); initiatePacingLoop();
             } else {
                 pacingToggleBtn.classList.remove('active');
                 pacingToggleBtn.querySelector('span').textContent = "Off";
@@ -779,54 +699,34 @@ ${selectedPromptText}
 
         function preparePacingSentences() {
             const paras = Array.from(document.getElementById('render-target').querySelectorAll('p'));
-            pacerState.sentences = [];
-            pacerState.paragraphIndex = 0;
-            pacerState.sentenceIndex = 0;
-
-            paras.forEach((paraNode, pIdx) => {
-                // Approximate sentence tokens parsing patterns safely
+            pacerState.sentences = []; pacerState.paragraphIndex = 0; pacerState.sentenceIndex = 0;
+            paras.forEach((paraNode) => {
                 const segmentedMatches = paraNode.textContent.match(/[^.!?]+[.!?]+(\s|$)/g) || [paraNode.textContent];
                 segmentedMatches.forEach((sentenceText) => {
-                    const wordVolume = sentenceText.trim().split(/\s+/).length;
                     pacerState.sentences.push({
                         text: sentenceText.trim(),
                         paragraphElement: paraNode,
-                        wordCount: wordVolume
+                        wordCount: sentenceText.trim().split(/\s+/).length
                     });
                 });
             });
         }
 
         function initiatePacingLoop() {
-            if (pacerState.sentences.length === 0 || pacerState.sentenceIndex >= pacerState.sentences.length) return;
-
+            if (pacerState.sentenceIndex >= pacerState.sentences.length) return;
             const targetPacingData = pacerState.sentences[pacerState.sentenceIndex];
             const currentWPM = parseInt(document.getElementById('pacer-speed').value);
-            
-            // Equation parsing timing interval for targeted array blocks
             const durationMs = (targetPacingData.wordCount / currentWPM) * 60 * 1000;
             const targetLine = document.getElementById('pacing-line');
             
-            // Align pacer system coordinates
-            const paragraphCoords = targetPacingData.paragraphElement.offsetTop;
-            const paragraphHeight = targetPacingData.paragraphElement.offsetHeight;
-            
             targetLine.style.opacity = "0.7";
-            targetLine.style.top = `${paragraphCoords + paragraphHeight}px`;
-
-            // Auto center viewport bounds smoothly over fast tracking pacing lines
+            targetLine.style.top = `${targetPacingData.paragraphElement.offsetTop + targetPacingData.paragraphElement.offsetHeight}px`;
             targetPacingData.paragraphElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            activePacerInterval = setTimeout(() => {
-                pacerState.sentenceIndex++;
-                initiatePacingLoop();
-            }, durationMs);
+            activePacerInterval = setTimeout(() => { pacerState.sentenceIndex++; initiatePacingLoop(); }, durationMs);
         }
 
-        function haltPacingLoop() {
-            clearTimeout(activePacerInterval);
-            document.getElementById('pacing-line').style.opacity = "0";
-        }
+        function haltPacingLoop() { clearTimeout(activePacerInterval); document.getElementById('pacing-line').style.opacity = "0"; }
     </script>
 </body>
 </html>
